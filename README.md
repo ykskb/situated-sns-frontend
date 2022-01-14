@@ -1,6 +1,6 @@
 # Situated Problem for [Phrag](https://github.com/ykskb/phrag) : SNS Project (Frontend)
 
-This project is frontend (Next JS) of a test-case scenario for project: [Phrag](https://github.com/ykskb/phrag) to inspect & validate its concept of constraint-driven transformation of RDBMS schema to GraphQL.
+This project is frontend (Next JS) of a situated problem for project: [Phrag](https://github.com/ykskb/phrag) to inspect & validate its concept of constraint-driven transformation of RDBMS schema to GraphQL.
 
 Backend currently sits under dev profile of Phrag project at this mement. ([Link](https://github.com/ykskb/phrag/blob/main/dev/src/dev_reitit.clj))
 
@@ -11,7 +11,9 @@ Backend currently sits under dev profile of Phrag project at this mement. ([Link
 - Bookmark posts
 - Like posts
 - Comment on posts
+- Like comments
 - Reply on post comments
+- Like replies
 - Follow users
 - Message users
 
@@ -24,6 +26,7 @@ Backend currently sits under dev profile of Phrag project at this mement. ([Link
 Set env vars according to `.env.template` and run:
 
 ```sh
+yarn install
 npm run dev
 ```
 
