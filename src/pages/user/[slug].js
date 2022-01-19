@@ -9,15 +9,41 @@ import {
 import MainHeader from "../../components/mainheader";
 import { PostFeedList } from "../../components/post/post-feed";
 import FeedCommentModal from "../../components/post/comment-modal";
-import { queryEndUser, queryPostList } from "../../lib/graphql";
+import {
+  createUserFollow,
+  deleteUserFollow,
+  queryEndUserWithPosts,
+} from "../../lib/graphql";
 import { getAuthUserInfo } from "../../lib/api";
 import Link from "next/link";
 
-const UserPage = ({ enduser, authUser, feeds }) => {
+const UserPage = ({ enduser, authUser }) => {
+  const router = useRouter();
   const [showCommentModal, setCommentModalShown] = useState(false);
   const [postId, setPostId] = useState(null);
-  const router = useRouter();
+  const [followingCount, _setFollowingCount] = useState(
+    enduser.enduser_follows_on_created_by_aggregate.count || 0
+  );
+  const [followedCount, setFollowedCount] = useState(
+    enduser.enduser_follows_on_enduser_id_aggregate.count || 0
+  );
+  const [isFollowing, setIsFollowing] = useState(
+    authUser ? enduser.enduser_follows_on_enduser_id.length > 0 : false
+  );
+  const [isFollowed, _setIsFollowed] = useState(
+    authUser ? enduser.enduser_follows_on_created_by.length > 0 : false
+  );
   const isOwnPage = authUser && enduser.slug == authUser.slug;
+  const followButtonClicked = async (e) => {
+    await createUserFollow(enduser.id);
+    setIsFollowing(true);
+    setFollowedCount(followedCount + 1);
+  };
+  const unfollowButtonClicked = async (e) => {
+    await deleteUserFollow(enduser.id);
+    setIsFollowing(false);
+    setFollowedCount(followedCount - 1);
+  };
   return (
     <>
       <MainHeader
@@ -26,10 +52,19 @@ const UserPage = ({ enduser, authUser, feeds }) => {
           router.back();
         }}
       />
-      <UserProfile enduser={enduser} isOwnPage={isOwnPage} />
+      <UserProfile
+        enduser={enduser}
+        isOwnPage={isOwnPage}
+        isFollowing={isFollowing}
+        isFollowed={isFollowed}
+        followingCount={followingCount}
+        followedCount={followedCount}
+        followButtonClicked={followButtonClicked}
+        unfollowButtonClicked={unfollowButtonClicked}
+      />
       <section className="feed">
         <PostFeedList
-          data={feeds}
+          data={enduser.posts || []}
           setPostId={setPostId}
           setCommentModalShown={setCommentModalShown}
         />
@@ -48,7 +83,16 @@ const UserPage = ({ enduser, authUser, feeds }) => {
   );
 };
 
-const UserProfile = ({ enduser, isOwnPage }) => {
+const UserProfile = ({
+  enduser,
+  isOwnPage,
+  isFollowing,
+  isFollowed,
+  followingCount,
+  followedCount,
+  followButtonClicked,
+  unfollowButtonClicked,
+}) => {
   const { publicRuntimeConfig } = getConfig();
   const defaultUserImage = publicRuntimeConfig.DEFAULT_USER_IMAGE_URL;
   return (
@@ -62,10 +106,22 @@ const UserProfile = ({ enduser, isOwnPage }) => {
         <span className="common-title">{enduser.username}</span>
         <span className="usercode">
           @{enduser.slug ? enduser.slug : "slug"}
+          {isFollowed ? (
+            <span style={{ opacity: 0.6, paddingLeft: "0.5em" }}>
+              Follows you
+            </span>
+          ) : (
+            ""
+          )}
         </span>
       </header>
       <div className="user-bio" style={{ paddingTop: "20px" }}>
         <p>{enduser.bio}</p>
+        <br />
+        <p>
+          {followedCount}&nbsp;Followers&nbsp;&nbsp;&nbsp;&nbsp;
+          {followingCount}&nbsp;Following
+        </p>
       </div>
       <ul className="user-options u-flex u-flex-end">
         {isOwnPage ? (
@@ -82,9 +138,25 @@ const UserProfile = ({ enduser, isOwnPage }) => {
               <button className="big-green-button">Message</button>
             </li>
             &nbsp;
-            <li>
-              <button className="big-green-button">Follow</button>
-            </li>
+            {isFollowing ? (
+              <li>
+                <button
+                  className="big-green-button"
+                  onClick={unfollowButtonClicked}
+                >
+                  Following
+                </button>
+              </li>
+            ) : (
+              <li>
+                <button
+                  className="big-green-button"
+                  onClick={followButtonClicked}
+                >
+                  Follow
+                </button>
+              </li>
+            )}
           </>
         )}
       </ul>
@@ -98,7 +170,10 @@ export const getServerSideProps = withAuthUserTokenSSR({
   const token = await AuthUser.getIdToken();
   const authUserInfo = token ? await getAuthUserInfo(token) : null;
 
-  const userInfoRes = await queryEndUser(params.slug);
+  const userInfoRes = await queryEndUserWithPosts(
+    params.slug,
+    authUserInfo ? authUserInfo.id : null
+  );
   if (
     !userInfoRes.data ||
     !userInfoRes.data["endusers"] ||
@@ -108,15 +183,10 @@ export const getServerSideProps = withAuthUserTokenSSR({
   }
   const enduser = userInfoRes.data["endusers"][0];
 
-  const postRes = authUserInfo
-    ? await queryPostList(authUserInfo.id, enduser.id)
-    : await queryPostList(null, enduser.id);
-
   return {
     props: {
       enduser: enduser,
       authUser: authUserInfo || null,
-      feeds: postRes.data["posts"],
     },
   };
 });

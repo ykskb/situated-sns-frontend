@@ -85,6 +85,23 @@ export const updateEndUser = async (slug, username, bio) => {
   return await graphqlWithIdToken(q, vars);
 };
 
+export const createUserFollow = async (userId) => {
+  const q = `mutation createEnduserFollowMutation($created_by: Int!, $enduser_id: Int!) {
+  createEnduserFollow(created_by: $created_by, enduser_id: $enduser_id) { created_by enduser_id }}`;
+  return await graphqlWithIdToken(q, {
+    created_by: 0,
+    enduser_id: userId,
+  });
+};
+
+export const deleteUserFollow = async (userId) => {
+  const q = `mutation deleteEnduserFollowMutation($pk_columns: EnduserFollowPkColumns!) {
+  deleteEnduserFollow(pk_columns: $pk_columns) { result }}`;
+  return await graphqlWithIdToken(q, {
+    pk_columns: { created_by: 0, enduser_id: userId },
+  });
+};
+
 // No auth
 
 export const queryEndUser = async (slug) => {
@@ -97,6 +114,72 @@ export const queryEndUser = async (slug) => {
           username
 	  slug
 	  profile_image_url
+        }
+      }
+    `,
+    {},
+    null
+  );
+};
+
+export const queryEndUserWithPosts = async (slug, authUserId = null) => {
+  const postLikeFilter = authUserId
+    ? `(where: { created_by: { eq: ${authUserId} } })`
+    : "";
+  const isFollowingFilter = authUserId
+    ? `(where: { created_by: { eq: ${authUserId} } })`
+    : "";
+  const isFollowedFilter = authUserId
+    ? `(where: { enduser_id: { eq: ${authUserId} } })`
+    : "";
+
+  return await graphql(
+    `
+      query {
+        endusers (where: {slug: {eq: "${slug}"}}) {
+	  id
+          email
+          username
+	  slug
+	  profile_image_url
+	  bio
+	  enduser_follows_on_enduser_id_aggregate { count }
+	  enduser_follows_on_enduser_id${isFollowingFilter} {
+	    created_by 
+	  }
+	  enduser_follows_on_created_by_aggregate {count}
+  	  enduser_follows_on_created_by${isFollowedFilter} {
+	    enduser_id 
+	  }
+	  posts(sort: { created_at: desc }) {
+            id
+            title
+            content
+            created_at
+            comment_count
+            like_count
+            repost_count
+            post_type {
+              id
+              name
+            }
+            post_image {
+              id
+              name
+              url
+            }
+            created_by_enduser {
+              id
+              username
+	      slug
+              profile_image_url
+            }
+            post_likes${postLikeFilter} {
+              created_by_enduser {
+                id
+              }
+            }
+          }
         }
       }
     `,
