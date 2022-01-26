@@ -24,9 +24,14 @@ const Layout = ({ children }) => {
             try {
               const loginRes = await login(token);
               setContext({ authUserInfo: loginRes.authUser });
+              // Valid user login
               if (loginRes.authUser && loginRes.authUser.is_valid) {
-                router.push("/");
+                // User might land on any page with token, so only redirect from auth page
+                if (router.pathname === "/auth") {
+                  router.push("/");
+                }
               } else {
+                // Firebase success, but registration is not done
                 router.push("/profile");
               }
             } catch {
