@@ -13,6 +13,7 @@ import {
   createUserFollow,
   deleteUserFollow,
   queryEndUserWithPosts,
+  queryEndUserWithPostsAuthed,
 } from "../../lib/graphql";
 import { getAuthUserInfo } from "../../lib/api";
 import Link from "next/link";
@@ -119,8 +120,13 @@ const UserProfile = ({
         <p>{enduser.bio}</p>
         <br />
         <p>
-          {followedCount}&nbsp;Followers&nbsp;&nbsp;&nbsp;&nbsp;
-          {followingCount}&nbsp;Following
+          <Link href={"/user/" + enduser.slug + "/followers"}>
+            <a>{followedCount}&nbsp;Followers</a>
+          </Link>
+          &nbsp;&nbsp;&nbsp;&nbsp;
+          <Link href={"/user/" + enduser.slug + "/following"}>
+            <a>{followingCount}&nbsp;Following</a>
+          </Link>
         </p>
       </div>
       <ul className="user-options u-flex u-flex-end">
@@ -170,10 +176,9 @@ export const getServerSideProps = withAuthUserTokenSSR({
   const token = await AuthUser.getIdToken();
   const authUserInfo = token ? await getAuthUserInfo(token) : null;
 
-  const userInfoRes = await queryEndUserWithPosts(
-    params.slug,
-    authUserInfo ? authUserInfo.id : null
-  );
+  const userInfoRes = authUserInfo
+    ? await queryEndUserWithPostsAuthed(params.slug, authUserInfo.id)
+    : await queryEndUserWithPosts(params.slug);
   if (
     !userInfoRes.data ||
     !userInfoRes.data["endusers"] ||

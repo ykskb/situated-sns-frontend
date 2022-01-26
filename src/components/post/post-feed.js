@@ -69,8 +69,10 @@ export const PostFeed = ({
   setCommentModalShown,
   setRegisterModalShown,
 }) => {
-  const [liked, setLiked] = useState(post.post_likes.length > 0);
-  const [likeCount, setLikeCount] = useState(post.like_count);
+  const [liked, setLiked] = useState(
+    post.post_likes && post.post_likes.length > 0
+  );
+  const [likeCount, setLikeCount] = useState(post.like_count || 0);
   const authUserInfo = authUserInfoContext();
   const isValidUser = authUserInfo && authUserInfo.is_valid;
 

@@ -5,7 +5,7 @@ import { CommentFeedList } from "../../components/post/comment-feed";
 import FeedCommentModal from "../../components/post/comment-modal";
 import { PostFeed } from "../../components/post/post-feed";
 import CommentReplyModal from "../../components/post/comment-reply-modal";
-import { queryPostDetails } from "../../lib/graphql";
+import { queryPostDetails, queryPostDetailsAuthed } from "../../lib/graphql";
 import { AuthAction, withAuthUserTokenSSR } from "next-firebase-auth";
 import { getAuthUserInfo } from "../../lib/api";
 import RegisterModal from "../../components/register-modal";
@@ -72,8 +72,8 @@ export const getServerSideProps = withAuthUserTokenSSR({
   const token = await AuthUser.getIdToken();
   const authUserInfo = token ? await getAuthUserInfo(token) : null;
   const res = authUserInfo
-    ? await queryPostDetails(params.id, authUserInfo.id)
-    : await queryPostDetails(params.id);
+    ? await queryPostDetailsAuthed(parseInt(params.id), authUserInfo.id)
+    : await queryPostDetails(parseInt(params.id));
   return {
     props: {
       authUserInfo: authUserInfo || null,

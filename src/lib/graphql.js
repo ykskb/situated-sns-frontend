@@ -107,51 +107,104 @@ export const deleteUserFollow = async (userId) => {
 export const queryEndUser = async (slug) => {
   return await graphql(
     `
-      query {
-        endusers (where: {slug: {eq: "${slug}"}}) {
-	  id
-          email
+      query endUser($slug: String!) {
+        query: endusers(where: { slug: { eq: $slug } }) {
+          id
           username
-	  slug
-	  profile_image_url
+          slug
+          profile_image_url
         }
       }
     `,
-    {},
+    { slug },
     null
   );
 };
 
-export const queryEndUserWithPosts = async (slug, authUserId = null) => {
-  const postLikeFilter = authUserId
-    ? `(where: { created_by: { eq: ${authUserId} } })`
-    : "";
-  const isFollowingFilter = authUserId
-    ? `(where: { created_by: { eq: ${authUserId} } })`
-    : "";
-  const isFollowedFilter = authUserId
-    ? `(where: { enduser_id: { eq: ${authUserId} } })`
-    : "";
-
+export const queryEndUserWithFollowers = async (slug) => {
   return await graphql(
     `
-      query {
-        endusers (where: {slug: {eq: "${slug}"}}) {
-	  id
+      query endUserWithFollowers($slug: String!) {
+        endusers(where: { slug: { eq: $slug } }) {
+          slug
+          username
+          bio
+          enduser_follows_on_enduser_id_aggregate {
+            count
+          }
+          enduser_follows_on_enduser_id {
+            enduser_id
+            created_by_enduser {
+              slug
+              username
+              bio
+              profile_image_url
+            }
+          }
+        }
+      }
+    `,
+    { slug },
+    null
+  );
+};
+
+export const queryEndUserWithFollowing = async (slug) => {
+  return await graphql(
+    `
+      query endUserWithFollowing($slug: String!) {
+        endusers(where: { slug: { eq: $slug } }) {
+          slug
+          username
+          bio
+          enduser_follows_on_created_by_aggregate {
+            count
+          }
+          enduser_follows_on_created_by {
+            enduser_id
+            enduser {
+              slug
+              username
+              bio
+              profile_image_url
+            }
+          }
+        }
+      }
+    `,
+    { slug },
+    null
+  );
+};
+
+export const queryEndUserWithPostsAuthed = async (slug, authUserId) => {
+  return await graphql(
+    `
+      query endUserWithPosts($slug: String!, $auth_user_id: Int!) {
+        endusers(where: { slug: { eq: $slug } }) {
+          id
           email
           username
-	  slug
-	  profile_image_url
-	  bio
-	  enduser_follows_on_enduser_id_aggregate { count }
-	  enduser_follows_on_enduser_id${isFollowingFilter} {
-	    created_by 
-	  }
-	  enduser_follows_on_created_by_aggregate {count}
-  	  enduser_follows_on_created_by${isFollowedFilter} {
-	    enduser_id 
-	  }
-	  posts(sort: { created_at: desc }) {
+          slug
+          profile_image_url
+          bio
+          enduser_follows_on_enduser_id_aggregate {
+            count
+          }
+          enduser_follows_on_enduser_id(
+            where: { created_by: { eq: $auth_user_id } }
+          ) {
+            created_by
+          }
+          enduser_follows_on_created_by_aggregate {
+            count
+          }
+          enduser_follows_on_created_by(
+            where: { enduser_id: { eq: $auth_user_id } }
+          ) {
+            enduser_id
+          }
+          posts(sort: { created_at: desc }) {
             id
             title
             content
@@ -171,10 +224,10 @@ export const queryEndUserWithPosts = async (slug, authUserId = null) => {
             created_by_enduser {
               id
               username
-	      slug
+              slug
               profile_image_url
             }
-            post_likes${postLikeFilter} {
+            post_likes(where: { created_by: { eq: $auth_user_id } }) {
               created_by_enduser {
                 id
               }
@@ -183,7 +236,56 @@ export const queryEndUserWithPosts = async (slug, authUserId = null) => {
         }
       }
     `,
-    {},
+    { slug, auth_user_id: authUserId },
+    null
+  );
+};
+
+export const queryEndUserWithPosts = async (slug) => {
+  return await graphql(
+    `
+      query endUserWithPosts($slug: String!) {
+        endusers(where: { slug: { eq: $slug } }) {
+          id
+          email
+          username
+          slug
+          profile_image_url
+          bio
+          enduser_follows_on_enduser_id_aggregate {
+            count
+          }
+          enduser_follows_on_created_by_aggregate {
+            count
+          }
+          posts(sort: { created_at: desc }) {
+            id
+            title
+            content
+            created_at
+            comment_count
+            like_count
+            repost_count
+            post_type {
+              id
+              name
+            }
+            post_image {
+              id
+              name
+              url
+            }
+            created_by_enduser {
+              id
+              username
+              slug
+              profile_image_url
+            }
+          }
+        }
+      }
+    `,
+    { slug },
     null
   );
 };
@@ -217,20 +319,11 @@ export const queryPostTypes = async () => {
   );
 };
 
-export const queryPostList = async (
-  authUserId = null,
-  createdByUserId = null
-) => {
-  const postLikeFilter = authUserId
-    ? `(where: { created_by: { eq: ${authUserId} } })`
-    : "";
-  const postFilter = createdByUserId
-    ? `where: { created_by: { eq: ${createdByUserId} }}`
-    : "";
+export const queryPostListAuthed = async (authUserId) => {
   return await graphql(
     `
-      query {
-        posts(sort: { created_at: desc } ${postFilter}) {
+      query postList($auth_user_id: Int!) {
+        posts(sort: { created_at: desc }) {
           id
           title
           content
@@ -250,10 +343,50 @@ export const queryPostList = async (
           created_by_enduser {
             id
             username
-	    slug
+            slug
             profile_image_url
           }
-          post_likes${postLikeFilter} {
+          post_likes(where: { created_by: { eq: $auth_user_id } }) {
+            created_by_enduser {
+              id
+            }
+          }
+        }
+      }
+    `,
+    { auth_user_id: authUserId },
+    null
+  );
+};
+
+export const queryPostList = async () => {
+  return await graphql(
+    `
+      query {
+        posts(sort: { created_at: desc }) {
+          id
+          title
+          content
+          created_at
+          comment_count
+          like_count
+          repost_count
+          post_type {
+            id
+            name
+          }
+          post_image {
+            id
+            name
+            url
+          }
+          created_by_enduser {
+            id
+            username
+            slug
+            profile_image_url
+          }
+          post_likes {
             created_by_enduser {
               id
             }
@@ -266,14 +399,11 @@ export const queryPostList = async (
   );
 };
 
-export const queryPostDetails = async (postId, userId = null) => {
-  const createdByFilter = userId
-    ? `(where: { created_by: { eq: ${userId} } })`
-    : "";
+export const queryPostDetails = async (postId) => {
   return await graphql(
     `
-      query {
-        posts(where: { id: { eq: ${postId} } }) {
+      query postDeails($post_id: Int!) {
+        posts(where: { id: { eq: $post_id } }) {
           id
           title
           content
@@ -287,10 +417,10 @@ export const queryPostDetails = async (postId, userId = null) => {
           created_by_enduser {
             id
             username
-	    slug
+            slug
             profile_image_url
           }
-	  post_likes${createdByFilter} {
+          post_likes {
             created_by_enduser {
               id
             }
@@ -298,37 +428,103 @@ export const queryPostDetails = async (postId, userId = null) => {
           post_comments(sort: { created_at: asc }) {
             id
             comment
-	    like_count
+            like_count
             created_at
             created_by_enduser {
               id
               username
-	      slug
+              slug
               profile_image_url
             }
-	    post_comment_likes${createdByFilter} {
-        	post_comment_id
-	    }
+            post_comment_likes {
+              post_comment_id
+            }
             post_comment_replies(sort: { created_at: asc }) {
               id
               reply
-	      like_count
+              like_count
               created_at
               created_by_enduser {
                 id
                 username
-		slug
+                slug
                 profile_image_url
               }
-	      post_comment_reply_likes${createdByFilter} {
-          	post_comment_reply_id
+              post_comment_reply_likes {
+                post_comment_reply_id
               }
             }
           }
         }
       }
     `,
-    {},
+    { post_id: postId },
+    null
+  );
+};
+
+export const queryPostDetailsAuthed = async (postId, userId) => {
+  return await graphql(
+    `
+      query postDeails($post_id: Int!, $auth_user_id: Int!) {
+        posts(where: { id: { eq: $post_id } }) {
+          id
+          title
+          content
+          post_image {
+            url
+          }
+          comment_count
+          like_count
+          repost_count
+          created_at
+          created_by_enduser {
+            id
+            username
+            slug
+            profile_image_url
+          }
+          post_likes(where: { created_by: { eq: $auth_user_id } }) {
+            created_by_enduser {
+              id
+            }
+          }
+          post_comments(sort: { created_at: asc }) {
+            id
+            comment
+            like_count
+            created_at
+            created_by_enduser {
+              id
+              username
+              slug
+              profile_image_url
+            }
+            post_comment_likes(where: { created_by: { eq: $auth_user_id } }) {
+              post_comment_id
+            }
+            post_comment_replies(sort: { created_at: asc }) {
+              id
+              reply
+              like_count
+              created_at
+              created_by_enduser {
+                id
+                username
+                slug
+                profile_image_url
+              }
+              post_comment_reply_likes(
+                where: { created_by: { eq: $auth_user_id } }
+              ) {
+                post_comment_reply_id
+              }
+            }
+          }
+        }
+      }
+    `,
+    { post_id: postId, auth_user_id: userId },
     null
   );
 };

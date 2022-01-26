@@ -10,7 +10,7 @@ import MainHeader from "../components/mainheader";
 import FeedCommentModal from "../components/post/comment-modal";
 import { useRouter } from "next/router";
 import { getAuthUserInfo } from "../lib/api";
-import { queryPostList } from "../lib/graphql";
+import { queryPostList, queryPostListAuthed } from "../lib/graphql";
 import RegisterModal from "../components/register-modal";
 
 const HomePage = ({ authUserInfo, feeds }) => {
@@ -56,7 +56,7 @@ export const getServerSideProps = withAuthUserTokenSSR({
   const token = await AuthUser.getIdToken();
   authUserInfo = token ? await getAuthUserInfo(token) : null;
   const res = authUserInfo
-    ? await queryPostList(authUserInfo.id)
+    ? await queryPostListAuthed(authUserInfo.id)
     : await queryPostList();
   return {
     props: {
