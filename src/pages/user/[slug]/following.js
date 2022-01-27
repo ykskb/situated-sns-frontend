@@ -10,8 +10,6 @@ import { getAuthUserInfo } from "../../../lib/api";
 import { queryEndUserWithFollowing } from "../../../lib/graphql";
 
 const Following = ({ enduser }) => {
-  console.log("here");
-  console.log(enduser);
   const router = useRouter();
   return (
     <>
@@ -34,14 +32,8 @@ export const getServerSideProps = withAuthUserTokenSSR({
   const token = await AuthUser.getIdToken();
   const userInfo = token ? await getAuthUserInfo(token) : null;
   if (!userInfo || !userInfo.is_valid) {
-    return {
-      redirect: {
-        destination: "/profile",
-        permanent: false,
-      },
-    };
+    return { notFound: true };
   }
-
   const res = await queryEndUserWithFollowing(params.slug);
   return {
     props: {

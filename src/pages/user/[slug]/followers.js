@@ -14,7 +14,6 @@ import {
 
 const Followers = ({ enduser }) => {
   const router = useRouter();
-  console.log(enduser);
   return (
     <>
       <MainHeader
@@ -37,14 +36,8 @@ export const getServerSideProps = withAuthUserTokenSSR({
   const token = await AuthUser.getIdToken();
   const userInfo = token ? await getAuthUserInfo(token) : null;
   if (!userInfo || !userInfo.is_valid) {
-    return {
-      redirect: {
-        destination: "/profile",
-        permanent: false,
-      },
-    };
+    return { notFound: true };
   }
-
   const res = await queryEndUserWithFollowers(params.slug);
   return {
     props: {
