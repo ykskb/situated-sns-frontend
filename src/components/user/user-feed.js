@@ -14,15 +14,12 @@ export const UserFeedList = ({ enduserFollows, enduserKey = "enduser" }) => {
   );
 };
 
-export const UserFeed = ({
-  enduser,
-  articleStyle = { padding: "10px 15px" },
-}) => {
+export const UserFeed = ({ enduser }) => {
   const { publicRuntimeConfig } = getConfig();
   const defaultUserImage = publicRuntimeConfig.DEFAULT_USER_IMAGE_URL;
   return (
     <li className="feed-item">
-      <article className="tweet-item" style={articleStyle}>
+      <article className="tweet-item" style={{ padding: "10px 15px" }}>
         <Link href={`/user/${encodeURIComponent(enduser.slug)}`}>
           <a className="profile-image">
             <img

@@ -1,9 +1,4 @@
-import {
-  useAuthUser,
-  withAuthUser,
-  withAuthUserTokenSSR,
-  AuthAction,
-} from "next-firebase-auth";
+import { withAuthUser, withAuthUserTokenSSR } from "next-firebase-auth";
 import Router, { useRouter } from "next/router";
 import { getAuthUserInfo, postProfileImage } from "../lib/api";
 import MainHeader from "../components/mainheader";

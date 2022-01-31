@@ -102,7 +102,88 @@ export const deleteUserFollow = async (userId) => {
   });
 };
 
-// No auth
+export const createUserChat = async (userId) => {
+  const q = `mutation createEnduserChatMutation($created_by: Int!, $enduser_id: Int!) {
+  createEnduserChat(created_by: $created_by, enduser_id: $enduser_id) { id }}`;
+  return await graphqlWithIdToken(q, {
+    created_by: 0,
+    enduser_id: userId,
+  });
+};
+
+export const createEndUserMessage = async (chatId, msg) => {
+  return await graphqlWithIdToken(
+    `mutation createEnduserMessageMutation($chat_id: Int!, $message: String!) {
+  createEnduserMessage(chat_id: $chat_id, message: $message, enduser_id: 0, created_by: 0) { chat_id created_at created_by }}`,
+    { chat_id: chatId, message: msg }
+  );
+};
+
+// Token required (frontend/backend)
+
+export const queryChatsWithFirstMessage = async (idToken) => {
+  return await graphql(
+    `
+      query {
+        enduser_chats {
+          created_by
+          enduser {
+            id
+            slug
+            profile_image_url
+          }
+          created_by_enduser {
+            id
+            slug
+            profile_image_url
+          }
+          enduser_messages(sort: { created_at: desc }) {
+            message
+          }
+        }
+      }
+    `,
+    null,
+    idToken
+  );
+};
+
+export const queryChatWithMessages = async (chatUserId, idToken) => {
+  return await graphql(
+    `
+      query queryEnduserChats($enduser_id: Int!) {
+        enduser_chats(
+          where: {
+            or: [
+              { enduser_id: { eq: $enduser_id } }
+              { created_by: { eq: $enduser_id } }
+            ]
+          }
+        ) {
+          id
+          created_by
+          enduser {
+            slug
+            profile_image_url
+          }
+          created_by_enduser {
+            slug
+            profile_image_url
+          }
+          enduser_messages(sort: { created_at: desc }) {
+            message
+            created_by
+            created_at
+          }
+        }
+      }
+    `,
+    { enduser_id: chatUserId },
+    idToken
+  );
+};
+
+// No auth (frontend/backend)
 
 export const queryEndUser = async (slug) => {
   return await graphql(

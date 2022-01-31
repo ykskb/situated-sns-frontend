@@ -763,6 +763,19 @@ body {
   }
 }
 
+.message-form {
+  padding: 8px;
+  input[type="text"] {
+    width: calc(90% - 120px);
+    padding: 12px 20px;
+    margin: 8px 8px 8px 0;
+    display: inline-block;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+}
+
 .big-green-button {
   background-color: darkgreen;
   border-radius: 60px;

@@ -23,6 +23,16 @@ const Sidebar = ({ signOut }) => {
         </li>
         {authUserInfo ? (
           <>
+            <Link href={"/message"}>
+              <a>
+                <li className="main-nav-item">
+                  <a className="menu-item">
+                    <span className="icon">💬</span>
+                    <span className="text">Message</span>
+                  </a>
+                </li>
+              </a>
+            </Link>
             <Link href={isValidUser ? "/user/" + authUserInfo.slug : "/auth"}>
               <a>
                 <li className="main-nav-item">

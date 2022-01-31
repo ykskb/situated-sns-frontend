@@ -57,9 +57,13 @@ export const UserProfile = ({
           </Link>
         ) : (
           <>
-            <li className="message-options-item">
-              <button className="big-green-button">Message</button>
-            </li>
+            <Link href={`/message/${enduser.id}`}>
+              <a>
+                <li className="message-options-item">
+                  <button className="big-green-button">Message</button>
+                </li>
+              </a>
+            </Link>
             &nbsp;
             {isFollowing ? (
               <li>
