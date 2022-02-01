@@ -16,10 +16,12 @@ import {
 } from "../../lib/graphql";
 import { getAuthUserInfo } from "../../lib/api";
 import { UserProfile } from "../../components/user/user-profile";
+import RegisterModal from "../../components/register-modal";
 
 const UserPage = ({ enduser, authUser }) => {
   const router = useRouter();
   const [showCommentModal, setCommentModalShown] = useState(false);
+  const [showRegisterModal, setRegisterModalShown] = useState(false);
   const [postId, setPostId] = useState(null);
   const [followingCount, _setFollowingCount] = useState(
     enduser.enduser_follows_on_created_by_aggregate.count || 0
@@ -33,17 +35,27 @@ const UserPage = ({ enduser, authUser }) => {
   const [isFollowed, _setIsFollowed] = useState(
     authUser ? enduser.enduser_follows_on_created_by.length > 0 : false
   );
+  const isValidUser = authUser && authUser.is_valid;
   const isOwnPage = authUser && enduser.slug == authUser.slug;
   const followButtonClicked = async (e) => {
-    await createUserFollow(enduser.id);
-    setIsFollowing(true);
-    setFollowedCount(followedCount + 1);
+    if (!isValidUser) {
+      setRegisterModalShown(true);
+    } else {
+      await createUserFollow(enduser.id);
+      setIsFollowing(true);
+      setFollowedCount(followedCount + 1);
+    }
   };
   const unfollowButtonClicked = async (e) => {
-    await deleteUserFollow(enduser.id);
-    setIsFollowing(false);
-    setFollowedCount(followedCount - 1);
+    if (!isValidUser) {
+      setRegisterModalShown(true);
+    } else {
+      await deleteUserFollow(enduser.id);
+      setIsFollowing(false);
+      setFollowedCount(followedCount - 1);
+    }
   };
+
   return (
     <>
       <MainHeader title={enduser.username} onBackClick={router.back} />
@@ -62,6 +74,7 @@ const UserPage = ({ enduser, authUser }) => {
           data={enduser.posts || []}
           setPostId={setPostId}
           setCommentModalShown={setCommentModalShown}
+          setRegisterModalShown={setRegisterModalShown}
         />
       </section>
       <FeedCommentModal
@@ -72,6 +85,12 @@ const UserPage = ({ enduser, authUser }) => {
         }}
         afterSubmit={(postId) => {
           router.push(`/post/${postId}`);
+        }}
+      />
+      <RegisterModal
+        show={showRegisterModal}
+        onClose={() => {
+          setRegisterModalShown(false);
         }}
       />
     </>

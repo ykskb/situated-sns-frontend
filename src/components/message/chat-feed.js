@@ -4,9 +4,19 @@ import Link from "next/link";
 export const ChatFeedList = ({ authUserId, chats }) => {
   return (
     <ul className="feed-list">
-      {chats.map((chat) => (
-        <ChatFeed key={"chat-" + chat.id} authUserId={authUserId} chat={chat} />
-      ))}
+      {chats.length > 0 ? (
+        chats.map((chat) => (
+          <ChatFeed
+            key={"chat-" + chat.id}
+            authUserId={authUserId}
+            chat={chat}
+          />
+        ))
+      ) : (
+        <li>
+          <span>There is no message yet.</span>
+        </li>
+      )}
     </ul>
   );
 };

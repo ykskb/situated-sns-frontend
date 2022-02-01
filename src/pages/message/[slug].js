@@ -6,7 +6,7 @@ import {
 import { useRouter } from "next/router";
 import MainHeader from "../../components/mainheader";
 import { getAuthUserInfo } from "../../lib/api";
-import { queryChatWithMessages } from "../../lib/graphql";
+import { createUserChat, queryChatWithMessages } from "../../lib/graphql";
 import {
   MessageFeedList,
   MessageForm,
@@ -39,17 +39,23 @@ const ChatMessages = ({ authUser, chat }) => {
 };
 
 export const getServerSideProps = withAuthUserTokenSSR({
+  whenUnauthed: AuthAction.REDIRECT_TO_LOGIN,
   whenAuthed: AuthAction.RENDER,
 })(async ({ AuthUser, params, req }) => {
   const token = await AuthUser.getIdToken();
   const authUserInfo = token ? await getAuthUserInfo(token) : null;
-  const chatResponse = await queryChatWithMessages(
-    parseInt(params.slug),
-    token
-  );
-  const chat = chatResponse.data["enduser_chats"]
+  const userId = parseInt(params.slug); // TODO: change with slug
+  const chatResponse = await queryChatWithMessages(userId, token);
+  let chat = chatResponse.data["enduser_chats"]
     ? chatResponse.data["enduser_chats"][0]
     : null;
+  if (!chat) {
+    await createUserChat(userId, token);
+    const chatResponse = await queryChatWithMessages(userId, token);
+    chat = chatResponse.data["enduser_chats"]
+      ? chatResponse.data["enduser_chats"][0]
+      : null;
+  }
   return {
     props: {
       chat: chat,

@@ -102,15 +102,6 @@ export const deleteUserFollow = async (userId) => {
   });
 };
 
-export const createUserChat = async (userId) => {
-  const q = `mutation createEnduserChatMutation($created_by: Int!, $enduser_id: Int!) {
-  createEnduserChat(created_by: $created_by, enduser_id: $enduser_id) { id }}`;
-  return await graphqlWithIdToken(q, {
-    created_by: 0,
-    enduser_id: userId,
-  });
-};
-
 export const createEndUserMessage = async (chatId, msg) => {
   return await graphqlWithIdToken(
     `mutation createEnduserMessageMutation($chat_id: Int!, $message: String!) {
@@ -120,6 +111,19 @@ export const createEndUserMessage = async (chatId, msg) => {
 };
 
 // Token required (frontend/backend)
+
+export const createUserChat = async (userId, token) => {
+  const q = `mutation createEnduserChatMutation($created_by: Int!, $enduser_id: Int!) {
+  createEnduserChat(created_by: $created_by, enduser_id: $enduser_id) { id }}`;
+  return await graphql(
+    q,
+    {
+      created_by: 0,
+      enduser_id: userId,
+    },
+    token
+  );
+};
 
 export const queryChatsWithFirstMessage = async (idToken) => {
   return await graphql(

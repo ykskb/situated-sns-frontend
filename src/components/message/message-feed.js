@@ -5,14 +5,20 @@ export const MessageFeedList = ({ messages, authUser, chatUser }) => {
   messages.sort((a, b) => (a.created_at > b.created_at ? 1 : -1));
   return (
     <ul className="feed-list">
-      {messages.map((msg) => (
-        <MessageFeed
-          key={"message-" + msg.id}
-          message={msg}
-          authUser={authUser}
-          chatUser={chatUser}
-        />
-      ))}
+      {messages.length > 0 ? (
+        messages.map((msg) => (
+          <MessageFeed
+            key={"message-" + msg.id}
+            message={msg}
+            authUser={authUser}
+            chatUser={chatUser}
+          />
+        ))
+      ) : (
+        <li>
+          <span>There is no message sent yet.</span>
+        </li>
+      )}
     </ul>
   );
 };
@@ -54,6 +60,7 @@ export const MessageForm = ({ authUserId, chatId, messages, setMessages }) => {
       created_at: new Date().toLocaleString(),
     });
     setMessages(messages);
+    e.target.message.value = "";
   };
   return (
     <form className="message-form" onSubmit={sendClicked}>

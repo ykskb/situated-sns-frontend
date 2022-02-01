@@ -22,6 +22,7 @@ const Message = ({ authUser, chats }) => {
 };
 
 export const getServerSideProps = withAuthUserTokenSSR({
+  whenUnauthed: AuthAction.REDIRECT_TO_LOGIN,
   whenAuthed: AuthAction.RENDER,
 })(async ({ AuthUser, params, req }) => {
   const token = await AuthUser.getIdToken();

@@ -7,10 +7,7 @@ import { useRouter } from "next/router";
 import MainHeader from "../../../components/mainheader";
 import { UserFeedList } from "../../../components/user/user-feed";
 import { getAuthUserInfo } from "../../../lib/api";
-import {
-  queryEndUserWithFollowers,
-  queryEndUserWithFollowing,
-} from "../../../lib/graphql";
+import { queryEndUserWithFollowers } from "../../../lib/graphql";
 
 const Followers = ({ enduser }) => {
   const router = useRouter();
@@ -31,6 +28,7 @@ const Followers = ({ enduser }) => {
 };
 
 export const getServerSideProps = withAuthUserTokenSSR({
+  whenUnauthed: AuthAction.REDIRECT_TO_LOGIN,
   whenAuthed: AuthAction.RENDER,
 })(async ({ AuthUser, params, req }) => {
   const token = await AuthUser.getIdToken();
