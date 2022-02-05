@@ -3,7 +3,7 @@ import { graphql, graphqlWithIdToken } from "./client";
 // Frontend (uses frontend firebase SDK token)
 
 export const createPost = async (postImageId, postTypeId, title, content) => {
-  const q = `mutation createPostMutation($postTypeId: Int!, $title: String!, $content: String!, $postImageId: Int!) {
+  const q = `mutation createPostMutation($postTypeId: Int!, $title: String!, $content: String!, $postImageId: Int) {
 			createPost(post_type_id: $postTypeId, title: $title, content: $content, post_image_id: $postImageId) { id } }`;
   return await graphqlWithIdToken(q, {
     postTypeId,

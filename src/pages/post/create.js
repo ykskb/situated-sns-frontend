@@ -13,11 +13,15 @@ const PostCreatePage = ({ postTypes }) => {
   const router = useRouter();
   const submitPost = async (event) => {
     event.preventDefault();
-    // Submit image
-    const imageRes = await postPostImage(event.target.image.files[0]);
+    var imageId = null;
+    if (event.target.image.files.length > 0) {
+      // Submit image
+      const imageRes = await postPostImage(event.target.image.files[0]);
+      imageId = imageRes.id;
+    }
     // Submit post
     await createPost(
-      imageRes.id,
+      imageId,
       parseInt(event.target.type.value),
       event.target.title.value,
       event.target.content.value

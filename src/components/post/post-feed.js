@@ -117,7 +117,13 @@ export const PostFeed = ({
             <div className="common-content">
               <p>{post.title}</p>
               <p>{post.content}</p>
-              <img className="content-image" src={post.post_image.url} alt="" />
+              {post.post_image ? (
+                <img
+                  className="content-image"
+                  src={post.post_image.url}
+                  alt=""
+                />
+              ) : null}
             </div>
           </a>
         </Link>
