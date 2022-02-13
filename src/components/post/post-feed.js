@@ -7,27 +7,53 @@ import {
   ShareButton,
 } from "./feed";
 import { useState } from "react";
-import { createPostLike, deletePostLike } from "../../lib/graphql";
 import { authUserInfoContext } from "../../lib/context";
+import InfiniteScroll from "react-infinite-scroll-component";
+import { graphqlWithIdToken } from "../../lib/client";
 
 export const PostFeedList = ({
-  data,
+  postFeeds,
+  getMoreFeeds,
+  setPostFeeds,
   setPostId,
   setCommentModalShown,
   setRegisterModalShown,
+  authUserInfo,
 }) => {
+  const [page, setPage] = useState(2);
+  const [hasMore, setHasMore] = useState(true);
+
+  const getNextPage = async () => {
+    if (hasMore && page > 1) {
+      const moreFeeds = await getMoreFeeds(page);
+      if (moreFeeds.data && moreFeeds.data.posts.length < 1) setHasMore(false);
+      setPostFeeds((prev) => {
+        return [...prev, ...moreFeeds.data.posts];
+      });
+      setPage((prev) => prev + 1);
+    }
+  };
+
   return (
     <ul className="feed-list">
-      {data.map((post) => (
-        <PostFeed
-          key={"post-" + post.id}
-          post={post}
-          setPostId={setPostId}
-          setCommentModalShown={setCommentModalShown}
-          setRegisterModalShown={setRegisterModalShown}
-        />
-      ))}
-      <li className="feed-item">
+      <InfiniteScroll
+        dataLength={postFeeds.length}
+        next={getNextPage}
+        hasMore={hasMore}
+        loader={<h4>Loading...</h4>}
+        endMessage={<h4>End of posts</h4>}
+      >
+        {postFeeds.map((post) => (
+          <PostFeed
+            key={"post-" + post.id}
+            post={post}
+            setPostId={setPostId}
+            setCommentModalShown={setCommentModalShown}
+            setRegisterModalShown={setRegisterModalShown}
+          />
+        ))}
+      </InfiniteScroll>
+      {/* <li className="feed-item">
         <article className="tweet-item">
           <div className="common-content">
             <p>This is embedded post.</p>
@@ -58,7 +84,7 @@ export const PostFeedList = ({
             </a>
           </div>
         </article>
-      </li>
+      </li> */}
     </ul>
   );
 };
@@ -75,6 +101,18 @@ export const PostFeed = ({
   const [likeCount, setLikeCount] = useState(post.like_count || 0);
   const authUserInfo = authUserInfoContext();
   const isValidUser = authUserInfo && authUserInfo.is_valid;
+
+  const createPostLike = async (postId) => {
+    const q = `mutation createPostLikeMutation($postId: Int!) {
+  createPostLike(post_id: $postId) { created_by post_id }}`;
+    return await graphqlWithIdToken(q, { postId });
+  };
+  const deletePostLike = async (postId) => {
+    const q = `mutation deletePostLikeMutation($pkColumns: PostLikePkColumns!) {
+  deletePostLike(pk_columns: $pkColumns) { result }}`;
+    const pkColumns = { post_id: postId, created_by: 0 };
+    return await graphqlWithIdToken(q, { pkColumns });
+  };
 
   const commentButtonClicked = async (e) => {
     e.preventDefault();

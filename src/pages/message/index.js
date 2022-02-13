@@ -6,8 +6,8 @@ import {
 import { useRouter } from "next/router";
 import MainHeader from "../../components/mainheader";
 import { getAuthUserInfo } from "../../lib/api";
-import { queryChatsWithFirstMessage } from "../../lib/graphql";
 import { ChatFeedList } from "../../components/message/chat-feed";
+import { graphql } from "../../lib/client";
 
 const Message = ({ authUser, chats }) => {
   const router = useRouter();
@@ -18,6 +18,33 @@ const Message = ({ authUser, chats }) => {
         <ChatFeedList authUserId={authUser.id} chats={chats || []} />
       </section>
     </>
+  );
+};
+
+export const queryChatsWithFirstMessage = async (idToken) => {
+  return await graphql(
+    `
+      query {
+        enduser_chats {
+          created_by
+          enduser {
+            id
+            slug
+            profile_image_url
+          }
+          created_by_enduser {
+            id
+            slug
+            profile_image_url
+          }
+          enduser_messages(sort: { created_at: desc }) {
+            message
+          }
+        }
+      }
+    `,
+    null,
+    idToken
   );
 };
 

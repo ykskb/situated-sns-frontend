@@ -1,5 +1,5 @@
 import getConfig from "next/config";
-import { createEndUserMessage } from "../../lib/graphql";
+import { graphqlWithIdToken } from "../../lib/client";
 
 export const MessageFeedList = ({ messages, authUser, chatUser }) => {
   messages.sort((a, b) => (a.created_at > b.created_at ? 1 : -1));
@@ -45,6 +45,14 @@ export const MessageFeed = ({ message, authUser, chatUser }) => {
         {message.message}
       </article>
     </li>
+  );
+};
+
+const createEndUserMessage = async (chatId, msg) => {
+  return await graphqlWithIdToken(
+    `mutation createEnduserMessageMutation($chat_id: Int!, $message: String!) {
+  createEnduserMessage(chat_id: $chat_id, message: $message, enduser_id: 0, created_by: 0) { chat_id created_at created_by }}`,
+    { chat_id: chatId, message: msg }
   );
 };
 

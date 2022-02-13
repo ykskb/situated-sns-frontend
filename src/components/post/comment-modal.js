@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
-import { createPostComment } from "../../lib/graphql";
+import { graphqlWithIdToken } from "../../lib/client";
 
 const FeedCommentModal = ({ show, postId, onClose, afterSubmit }) => {
   const [isBrowser, setIsBrowser] = useState(false);
@@ -12,6 +12,15 @@ const FeedCommentModal = ({ show, postId, onClose, afterSubmit }) => {
   const handleCloseClick = (e) => {
     e.preventDefault();
     onClose();
+  };
+
+  const createPostComment = async (postId, comment) => {
+    const q = `mutation createPostCommentMutation($comment: String!, $postId: Int!) {
+  createPostComment(comment: $comment, post_id: $postId) {id}}`;
+    return await graphqlWithIdToken(q, {
+      postId,
+      comment,
+    });
   };
 
   const submitComment = async (e) => {

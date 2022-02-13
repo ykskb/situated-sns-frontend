@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import {
   withAuthUserTokenSSR,
@@ -8,18 +8,75 @@ import {
 import MainHeader from "../../components/mainheader";
 import { PostFeedList } from "../../components/post/post-feed";
 import FeedCommentModal from "../../components/post/comment-modal";
-import {
-  createUserFollow,
-  deleteUserFollow,
-  queryEndUserWithPosts,
-  queryEndUserWithPostsAuthed,
-} from "../../lib/graphql";
 import { getAuthUserInfo } from "../../lib/api";
 import { UserProfile } from "../../components/user/user-profile";
 import RegisterModal from "../../components/register-modal";
+import { graphql, graphqlWithIdToken } from "../../lib/client";
+import { authedPostListObj, postListObj } from "../../lib/graphql";
+
+const createUserFollow = async (userId) => {
+  const q = `mutation createEnduserFollowMutation($created_by: Int!, $enduser_id: Int!) {
+  createEnduserFollow(created_by: $created_by, enduser_id: $enduser_id) { created_by enduser_id }}`;
+  return await graphqlWithIdToken(q, {
+    created_by: 0,
+    enduser_id: userId,
+  });
+};
+
+const deleteUserFollow = async (userId) => {
+  const q = `mutation deleteEnduserFollowMutation($pk_columns: EnduserFollowPkColumns!) {
+  deleteEnduserFollow(pk_columns: $pk_columns) { result }}`;
+  return await graphqlWithIdToken(q, {
+    pk_columns: { created_by: 0, enduser_id: userId },
+  });
+};
+
+const postNumPerPage = 5;
+
+const queryPostListByUserAuthed = async (
+  createdBySlug,
+  token = null,
+  page = 1
+) => {
+  const vars = {
+    limit: postNumPerPage,
+    offset: postNumPerPage * (page - 1),
+    slug: createdBySlug,
+  };
+  const q = `
+      query postList($authuser_id: Int!, $limit: Int!, $offset: Int!, $enduser_id: Int!) {
+        posts(sort: { created_at: desc }, where: {created_by: {eq: $enduser_id}},
+		limit: $limit, offset: $offset) ${authedPostListObj} 
+      }
+    `;
+  if (token) {
+    return await graphql(q, vars, token);
+  } else {
+    return await graphqlWithIdToken(q, vars);
+  }
+};
+
+const queryPostListByUser = async (createdBySlug, page = 1) => {
+  const vars = {
+    limit: postNumPerPage,
+    offset: postNumPerPage * (page - 1),
+    slug: createdBySlug,
+  };
+  return await graphql(
+    `
+      query queryPostList($limit: Int!, $offset: Int!, $enduser_id) {
+        posts(sort: { created_at: desc }, where: {created_by: {eq: $enduser_id}},
+		limit: $limit, offset: $offset) ${postListObj}
+      }
+    `,
+    vars,
+    null
+  );
+};
 
 const UserPage = ({ enduser, authUser }) => {
   const router = useRouter();
+  const [postFeeds, setPostFeeds] = useState(enduser.posts || []);
   const [showCommentModal, setCommentModalShown] = useState(false);
   const [showRegisterModal, setRegisterModalShown] = useState(false);
   const [postId, setPostId] = useState(null);
@@ -55,6 +112,15 @@ const UserPage = ({ enduser, authUser }) => {
       setFollowedCount(followedCount - 1);
     }
   };
+  const getMoreFeeds = async (page) => {
+    return authUser
+      ? await queryPostListByUserAuthed(enduser.slug, null, page)
+      : await queryPostListByUser(enduser.slug, page);
+  };
+
+  useEffect(() => {
+    setPostFeeds(enduser.posts);
+  }, [enduser]);
 
   return (
     <>
@@ -71,7 +137,9 @@ const UserPage = ({ enduser, authUser }) => {
       />
       <section className="feed">
         <PostFeedList
-          data={enduser.posts || []}
+          postFeeds={postFeeds}
+          getMoreFeeds={getMoreFeeds}
+          setPostFeeds={setPostFeeds}
           setPostId={setPostId}
           setCommentModalShown={setCommentModalShown}
           setRegisterModalShown={setRegisterModalShown}
@@ -97,6 +165,68 @@ const UserPage = ({ enduser, authUser }) => {
   );
 };
 
+export const queryEndUserWithPostsAuthed = async (slug, token) => {
+  return await graphql(
+    `
+      query endUserWithPosts($slug: String!, $authuser_id: Int!) {
+        endusers(where: { slug: { eq: $slug } }) {
+          id
+          email
+          username
+          slug
+          profile_image_url
+          bio
+          enduser_follows_on_enduser_id_aggregate {
+            count
+          }
+          enduser_follows_on_enduser_id(
+            where: { created_by: { eq: $authuser_id } }
+          ) {
+            created_by
+          }
+          enduser_follows_on_created_by_aggregate {
+            count
+          }
+          enduser_follows_on_created_by(
+            where: { enduser_id: { eq: $authuser_id } }
+          ) {
+            enduser_id
+          }
+          posts(sort: { created_at: desc }) ${authedPostListObj}
+        }
+      }
+    `,
+    { slug },
+    token
+  );
+};
+
+const queryEndUserWithPosts = async (slug) => {
+  return await graphql(
+    `
+      query endUserWithPosts($slug: String!) {
+        endusers(where: { slug: { eq: $slug } }) {
+          id
+          email
+          username
+          slug
+          profile_image_url
+          bio
+          enduser_follows_on_enduser_id_aggregate {
+            count
+          }
+          enduser_follows_on_created_by_aggregate {
+            count
+          }
+          posts(sort: { created_at: desc }) ${postListObj}
+        }
+      }
+    `,
+    { slug },
+    null
+  );
+};
+
 export const getServerSideProps = withAuthUserTokenSSR({
   whenUnauthed: AuthAction.RENDER,
 })(async ({ AuthUser, req, params }) => {
@@ -104,7 +234,7 @@ export const getServerSideProps = withAuthUserTokenSSR({
   const authUserInfo = token ? await getAuthUserInfo(token) : null;
 
   const userInfoRes = authUserInfo
-    ? await queryEndUserWithPostsAuthed(params.slug, authUserInfo.id)
+    ? await queryEndUserWithPostsAuthed(params.slug, token)
     : await queryEndUserWithPosts(params.slug);
   if (
     !userInfoRes.data ||

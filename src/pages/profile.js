@@ -2,11 +2,23 @@ import { withAuthUser, withAuthUserTokenSSR } from "next-firebase-auth";
 import Router, { useRouter } from "next/router";
 import { getAuthUserInfo, postProfileImage } from "../lib/api";
 import MainHeader from "../components/mainheader";
-import { updateEndUser } from "../lib/graphql";
 import { useContext, useState } from "react";
 import { Context } from "../lib/context";
+import { graphqlWithIdToken } from "../lib/client";
 
-function Profile({ authUserInfo }) {
+const updateEndUser = async (slug, username, bio) => {
+  const q = `mutation updateEnduserMutation($pk_columns: EnduserPkColumns!, $slug: String!, $username: String!, $bio: String!) {
+  updateEnduser(pk_columns: $pk_columns, slug: $slug, username: $username, bio: $bio) { result }}`;
+  const vars = {
+    pk_columns: { id: 0 },
+    slug: slug,
+    username: username,
+    bio: bio,
+  };
+  return await graphqlWithIdToken(q, vars);
+};
+
+const Profile = ({ authUserInfo }) => {
   const router = useRouter();
   const [context, setContext] = useContext(Context);
   // Input handling
@@ -84,7 +96,7 @@ function Profile({ authUserInfo }) {
       </form>
     </>
   );
-}
+};
 
 export const getServerSideProps = withAuthUserTokenSSR()(
   async ({ AuthUser, req }) => {

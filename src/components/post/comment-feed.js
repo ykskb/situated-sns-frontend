@@ -1,12 +1,7 @@
 import { useState } from "react";
 import { FeedHeader, CommentButton, LikeButton, ShareButton } from "./feed";
-import {
-  createPostCommentLike,
-  createPostCommentReplyLike,
-  deletePostCommentLike,
-  deletePostCommentReplyLike,
-} from "../../lib/graphql";
 import { authUserInfoContext } from "../../lib/context";
+import { graphqlWithIdToken } from "../../lib/client";
 
 export const CommentFeedList = ({
   data,
@@ -26,6 +21,19 @@ export const CommentFeedList = ({
       ))}
     </ul>
   );
+};
+
+const createPostCommentLike = async (postCommentId) => {
+  const q = `mutation createCommentLikeMutation($postCommentId: Int!) {
+  createPostCommentLike(post_comment_id: $postCommentId) { created_by post_comment_id }}`;
+  return await graphqlWithIdToken(q, { postCommentId });
+};
+
+const deletePostCommentLike = async (postCommentId) => {
+  const q = `mutation deletePostCommentLikeMutation($pkColumns: PostCommentLikePkColumns!) {
+  deletePostCommentLike(pk_columns: $pkColumns) { result }}`;
+  const pkColumns = { post_comment_id: postCommentId, created_by: 0 };
+  return await graphqlWithIdToken(q, { pkColumns });
 };
 
 const CommentFeed = ({
@@ -112,6 +120,22 @@ const CommentReplyFeedList = ({
       ))}
     </ul>
   );
+};
+
+const createPostCommentReplyLike = async (postCommentReplyId) => {
+  const q = `mutation createCommentReplyLikeMutation($postCommentReplyId: Int!) {
+  createPostCommentReplyLike(post_comment_reply_id: $postCommentReplyId) { created_by post_comment_reply_id }}`;
+  return await graphqlWithIdToken(q, { postCommentReplyId });
+};
+
+const deletePostCommentReplyLike = async (postCommentReplyId) => {
+  const q = `mutation deletePostCommentReplyLikeMutation($pkColumns: PostCommentReplyLikePkColumns!) {
+  deletePostCommentReplyLike(pk_columns: $pkColumns) { result }}`;
+  const pkColumns = {
+    post_comment_reply_id: postCommentReplyId,
+    created_by: 0,
+  };
+  return await graphqlWithIdToken(q, { pkColumns });
 };
 
 const CommentReplyFeed = ({

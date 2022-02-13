@@ -1,6 +1,5 @@
 import Select from "react-select";
 import { getAuthUserInfo, postPostImage } from "../../lib/api";
-import { queryPostTypes, createPost } from "../../lib/graphql";
 import Router, { useRouter } from "next/router";
 import MainHeader from "../../components/mainheader";
 import {
@@ -8,6 +7,7 @@ import {
   withAuthUserTokenSSR,
   AuthAction,
 } from "next-firebase-auth";
+import { graphql, graphqlWithIdToken } from "../../lib/client";
 
 const PostCreatePage = ({ postTypes }) => {
   const router = useRouter();
@@ -78,6 +78,32 @@ export const getServerSideProps = withAuthUserTokenSSR({
     },
   };
 });
+
+const queryPostTypes = async () => {
+  return await graphql(
+    `
+      query {
+        post_types {
+          id
+          name
+        }
+      }
+    `,
+    {},
+    null
+  );
+};
+
+const createPost = async (postImageId, postTypeId, title, content) => {
+  const q = `mutation createPostMutation($postTypeId: Int!, $title: String!, $content: String!, $postImageId: Int) {
+			createPost(post_type_id: $postTypeId, title: $title, content: $content, post_image_id: $postImageId) { id } }`;
+  return await graphqlWithIdToken(q, {
+    postTypeId,
+    title,
+    content,
+    postImageId,
+  });
+};
 
 export default withAuthUser({
   whenUnauthedAfterInit: AuthAction.REDIRECT_TO_LOGIN,

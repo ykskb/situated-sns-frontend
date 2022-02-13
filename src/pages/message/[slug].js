@@ -6,12 +6,12 @@ import {
 import { useRouter } from "next/router";
 import MainHeader from "../../components/mainheader";
 import { getAuthUserInfo } from "../../lib/api";
-import { createUserChat, queryChatWithMessages } from "../../lib/graphql";
 import {
   MessageFeedList,
   MessageForm,
 } from "../../components/message/message-feed";
 import { useState } from "react";
+import { graphql } from "../../lib/client";
 
 const ChatMessages = ({ authUser, chat }) => {
   const router = useRouter();
@@ -35,6 +35,54 @@ const ChatMessages = ({ authUser, chat }) => {
         setMessages={setMessages}
       />
     </>
+  );
+};
+
+const createUserChat = async (userId, token) => {
+  const q = `mutation createEnduserChatMutation($created_by: Int!, $enduser_id: Int!) {
+  createEnduserChat(created_by: $created_by, enduser_id: $enduser_id) { id }}`;
+  return await graphql(
+    q,
+    {
+      created_by: 0,
+      enduser_id: userId,
+    },
+    token
+  );
+};
+
+const queryChatWithMessages = async (chatUserId, idToken) => {
+  return await graphql(
+    `
+      query queryEnduserChats($enduser_id: Int!) {
+        enduser_chats(
+          where: {
+            or: [
+              { enduser_id: { eq: $enduser_id } }
+              { created_by: { eq: $enduser_id } }
+            ]
+          }
+        ) {
+          id
+          created_by
+          enduser {
+            slug
+            profile_image_url
+          }
+          created_by_enduser {
+            slug
+            profile_image_url
+          }
+          enduser_messages(sort: { created_at: desc }) {
+            message
+            created_by
+            created_at
+          }
+        }
+      }
+    `,
+    { enduser_id: chatUserId },
+    idToken
   );
 };
 

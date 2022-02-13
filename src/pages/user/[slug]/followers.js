@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 import MainHeader from "../../../components/mainheader";
 import { UserFeedList } from "../../../components/user/user-feed";
 import { getAuthUserInfo } from "../../../lib/api";
-import { queryEndUserWithFollowers } from "../../../lib/graphql";
+import { graphql } from "../../../lib/client";
 
 const Followers = ({ enduser }) => {
   const router = useRouter();
@@ -24,6 +24,34 @@ const Followers = ({ enduser }) => {
         />
       </section>
     </>
+  );
+};
+
+const queryEndUserWithFollowers = async (slug) => {
+  return await graphql(
+    `
+      query endUserWithFollowers($slug: String!) {
+        endusers(where: { slug: { eq: $slug } }) {
+          slug
+          username
+          bio
+          enduser_follows_on_enduser_id_aggregate {
+            count
+          }
+          enduser_follows_on_enduser_id {
+            enduser_id
+            created_by_enduser {
+              slug
+              username
+              bio
+              profile_image_url
+            }
+          }
+        }
+      }
+    `,
+    { slug },
+    null
   );
 };
 

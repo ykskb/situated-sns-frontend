@@ -14,15 +14,18 @@ const CommentReplyModal = ({ show, commentId, onClose, afterSubmit }) => {
     onClose();
   };
 
-  const submitComment = async (e) => {
-    e.preventDefault();
+  const createPostCommentReply = async (commentId, reply) => {
     const q = `mutation createPostCommentReplyMutation($commentId: Int!, $reply: String!) {
   createPostCommentReply(comment_id: $commentId, reply: $reply) { id }}`;
-    const reply = e.target.reply.value;
-    const res = await graphqlWithIdToken(q, {
+    return await graphqlWithIdToken(q, {
       commentId,
       reply,
     });
+  };
+
+  const submitComment = async (e) => {
+    e.preventDefault();
+    createPostCommentReply(commentId, e.target.reply.value);
     if (typeof afterSubmit === "function") {
       afterSubmit(commentId);
     }
