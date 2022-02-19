@@ -33,14 +33,13 @@ const queryPostListAuthed = async (token = null, page = 1) => {
 };
 
 const queryPostList = async (page = 1) => {
-  const vars = { limit: postNumPerPage, offset: postNumPerPage * (page - 1) };
   return await graphql(
     `
       query queryPostList($limit: Int!, $offset: Int!) {
         posts(sort: { created_at: desc }, limit: $limit, offset: $offset) ${postListObj}
       }
     `,
-    vars,
+    { limit: postNumPerPage, offset: postNumPerPage * (page - 1) },
     null
   );
 };

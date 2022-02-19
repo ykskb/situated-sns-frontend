@@ -2,23 +2,143 @@ import { useState } from "react";
 import { FeedHeader, CommentButton, LikeButton, ShareButton } from "./feed";
 import { authUserInfoContext } from "../../lib/context";
 import { graphqlWithIdToken } from "../../lib/client";
+import InfiniteScroll from "react-infinite-scroll-component";
+
+const postCommentNumPerPage = 5;
+
+const queryPostCommentsAuthed = async (postId, page) => {
+  return await graphqlWithIdToken(
+    `
+      query postComments(
+        $post_id: Int!
+        $authuser_id: Int!
+        $comment_offset: Int!
+        $comment_limit: Int!
+      ) {
+        post_comments(
+          where: { post_id: { eq: $post_id } }
+          sort: { created_at: asc }
+          limit: $comment_limit
+          offset: $comment_offset
+        ) {
+          id
+          comment
+          like_count
+          created_at
+          created_by_enduser {
+            id
+            username
+            slug
+            profile_image_url
+          }
+          post_comment_likes(where: { created_by: { eq: $authuser_id } }) {
+            post_comment_id
+          }
+          post_comment_replies_aggregate {
+            count
+          }
+        }
+      }
+    `,
+    {
+      post_id: postId,
+      comment_limit: postCommentNumPerPage,
+      comment_offset: postCommentNumPerPage * (page - 1),
+    }
+  );
+};
+
+const queryPostComments = async (postId, page) => {
+  return await graphqlWithIdToken(
+    `
+      query postComments(
+        $post_id: Int!
+        $comment_offset: Int!
+        $comment_limit: Int!
+      ) {
+        post_comments(
+          where: { post_id: { eq: $post_id } }
+          sort: { created_at: asc }
+          limit: $comment_limit
+          offset: $comment_offset) {
+            id
+            comment
+            like_count
+            created_at
+            created_by_enduser {
+              id
+              username
+              slug
+              profile_image_url
+            }
+            post_comment_likes {
+              post_comment_id
+            }
+            post_comment_replies_aggregate {
+              count
+            }
+          }
+      }
+    `,
+    {
+      post_id: postId,
+      comment_limit: postCommentNumPerPage,
+      comment_offset: postCommentNumPerPage * (page - 1),
+    }
+  );
+};
+
+const getMorePostComments = async (isAuthed, postId, page) => {
+  return isAuthed
+    ? await queryPostCommentsAuthed(postId, page)
+    : await queryPostComments(postId, page);
+};
 
 export const CommentFeedList = ({
-  data,
+  isAuthed,
+  postId,
+  comments = [],
+  setComments,
   setCommentId,
   setCommentReplyModalShown,
   setRegisterModalShown,
 }) => {
+  const [page, setPage] = useState(2);
+  const [hasMore, setHasMore] = useState(comments.length > 0);
+
+  const getNextPage = async () => {
+    if (hasMore && page > 1) {
+      const moreFeeds = await getMorePostComments(isAuthed, postId, page);
+      if (!moreFeeds) return;
+      if (moreFeeds.data && moreFeeds.data.post_comments.length < 1) {
+        setHasMore(false);
+      } else {
+        setComments((prev) => {
+          return [...prev, ...moreFeeds.data.post_comments];
+        });
+        setPage((prev) => prev + 1);
+      }
+    }
+  };
+
   return (
     <ul className="feed-list">
-      {data.map((comment) => (
-        <CommentFeed
-          comment={comment}
-          setCommentId={setCommentId}
-          setCommentReplyModalShown={setCommentReplyModalShown}
-          setRegisterModalShown={setRegisterModalShown}
-        />
-      ))}
+      <InfiniteScroll
+        dataLength={comments.length}
+        next={getNextPage}
+        hasMore={hasMore}
+        loader={<h4>Loading...</h4>}
+        endMessage={<h4>End of comments</h4>}
+      >
+        {comments.map((comment) => (
+          <CommentFeed
+            comment={comment}
+            setCommentId={setCommentId}
+            setCommentReplyModalShown={setCommentReplyModalShown}
+            setRegisterModalShown={setRegisterModalShown}
+          />
+        ))}
+      </InfiniteScroll>
     </ul>
   );
 };
@@ -30,10 +150,10 @@ const createPostCommentLike = async (postCommentId) => {
 };
 
 const deletePostCommentLike = async (postCommentId) => {
-  const q = `mutation deletePostCommentLikeMutation($pkColumns: PostCommentLikePkColumns!) {
-  deletePostCommentLike(pk_columns: $pkColumns) { result }}`;
-  const pkColumns = { post_comment_id: postCommentId, created_by: 0 };
-  return await graphqlWithIdToken(q, { pkColumns });
+  const q = `mutation deletePostCommentLikeMutation($pk_columns: PostCommentLikePkColumns!) {
+  deletePostCommentLike(pk_columns: $pk_columns) { result }}`;
+  const pk_columns = { post_comment_id: postCommentId, created_by: 0 };
+  return await graphqlWithIdToken(q, { pk_columns });
 };
 
 const CommentFeed = ({
@@ -91,33 +211,96 @@ const CommentFeed = ({
           />
         </article>
       </li>
-      <CommentReplyFeedList
-        replies={comment.post_comment_replies}
-        commentId={comment.id}
-        setCommentId={setCommentId}
-        setCommentReplyModalShown={setCommentReplyModalShown}
-      />
+      {comment.post_comment_replies_aggregate.count &&
+        comment.post_comment_replies_aggregate.count > 0 && (
+          <CommentReplyFeedList
+            commentId={comment.id}
+            setCommentId={setCommentId}
+            setCommentReplyModalShown={setCommentReplyModalShown}
+          />
+        )}
     </>
   );
 };
 
+const queryCommentReplies = async (comment_id) => {
+  const q = `query queryCommentReplies($comment_id: Int!) {
+  post_comment_replies(where: {comment_id:{eq: $comment_id}}, sort: {id: asc})
+  { 
+    id
+    reply
+    like_count
+    created_at
+    created_by_enduser {
+      id
+      username
+      slug
+      profile_image_url
+    }
+    post_comment_reply_likes {
+      post_comment_reply_id
+    }
+  }}`;
+  return await graphqlWithIdToken(q, { comment_id });
+};
+
+const queryCommentRepliesAuthed = async (comment_id) => {
+  const q = `query queryCommentReplies($authuser_id: Int!, $comment_id: Int!) {
+  post_comment_replies(where: {comment_id:{eq: $comment_id}}, sort: {id: asc})
+  { 
+    id
+    reply
+    like_count
+    created_at
+    created_by_enduser {
+      id
+      username
+      slug
+      profile_image_url
+    }
+    post_comment_reply_likes(where: { created_by: { eq: $authuser_id }}) {
+      post_comment_reply_id
+    }
+  }}`;
+  return await graphqlWithIdToken(q, { comment_id });
+};
+
 const CommentReplyFeedList = ({
-  replies = [],
   commentId,
   setCommentId,
   setCommentReplyModalShown,
   setRegisterModalShown,
 }) => {
+  const authUserInfo = authUserInfoContext();
+  const [replyFeeds, setReplyFeeds] = useState(null);
+
+  const onShowMoreClick = async (_e) => {
+    const res = authUserInfo
+      ? await queryCommentRepliesAuthed(commentId)
+      : await queryCommentReplies(commentId);
+    setReplyFeeds(res.data.post_comment_replies);
+  };
   return (
     <ul className="feed-list">
-      {replies.map((reply) => (
-        <CommentReplyFeed
-          reply={reply}
-          commentId={commentId}
-          setCommentId={setCommentId}
-          setCommentReplyModalShown={setCommentReplyModalShown}
-        />
-      ))}
+      {replyFeeds ? (
+        replyFeeds.map((reply) => (
+          <CommentReplyFeed
+            reply={reply}
+            commentId={commentId}
+            setCommentId={setCommentId}
+            setCommentReplyModalShown={setCommentReplyModalShown}
+          />
+        ))
+      ) : (
+        <article
+          className="tweet-item"
+          style={{ padding: "10px 15px 10px 48px" }}
+        >
+          <div className="common-content">
+            <p onClick={onShowMoreClick}>Show more replies</p>
+          </div>
+        </article>
+      )}
     </ul>
   );
 };
@@ -129,13 +312,13 @@ const createPostCommentReplyLike = async (postCommentReplyId) => {
 };
 
 const deletePostCommentReplyLike = async (postCommentReplyId) => {
-  const q = `mutation deletePostCommentReplyLikeMutation($pkColumns: PostCommentReplyLikePkColumns!) {
-  deletePostCommentReplyLike(pk_columns: $pkColumns) { result }}`;
-  const pkColumns = {
+  const q = `mutation deletePostCommentReplyLikeMutation($pk_columns: PostCommentReplyLikePkColumns!) {
+  deletePostCommentReplyLike(pk_columns: $pk_columns) { result }}`;
+  const pk_columns = {
     post_comment_reply_id: postCommentReplyId,
     created_by: 0,
   };
-  return await graphqlWithIdToken(q, { pkColumns });
+  return await graphqlWithIdToken(q, { pk_columns });
 };
 
 const CommentReplyFeed = ({

@@ -23,12 +23,12 @@ export const request = async (method, url, body, headers, authToken) => {
 };
 
 export const requestWithIdToken = async (url, method, body, headers) => {
-  return firebase
-    .auth()
-    .currentUser.getIdToken(true)
-    .then(async function (idToken) {
+  const user = firebase.auth().currentUser;
+  if (user) {
+    return user.getIdToken(true).then(async function (idToken) {
       return await request(method, url, body, headers, idToken);
     });
+  }
 };
 
 export const graphql = async (query, variables, authToken) => {
@@ -46,10 +46,10 @@ export const graphql = async (query, variables, authToken) => {
 };
 
 export const graphqlWithIdToken = async (query, variables) => {
-  return firebase
-    .auth()
-    .currentUser.getIdToken(true)
-    .then(async function (idToken) {
+  const user = firebase.auth().currentUser;
+  if (user) {
+    return user.getIdToken().then(async function (idToken) {
       return await graphql(query, variables, idToken);
     });
+  }
 };

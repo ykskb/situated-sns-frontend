@@ -108,10 +108,10 @@ export const PostFeed = ({
     return await graphqlWithIdToken(q, { postId });
   };
   const deletePostLike = async (postId) => {
-    const q = `mutation deletePostLikeMutation($pkColumns: PostLikePkColumns!) {
-  deletePostLike(pk_columns: $pkColumns) { result }}`;
-    const pkColumns = { post_id: postId, created_by: 0 };
-    return await graphqlWithIdToken(q, { pkColumns });
+    const q = `mutation deletePostLikeMutation($pk_columns: PostLikePkColumns!) {
+  deletePostLike(pk_columns: $pk_columns) { result }}`;
+    const pk_columns = { post_id: postId, created_by: 0 };
+    return await graphqlWithIdToken(q, { pk_columns });
   };
 
   const commentButtonClicked = async (e) => {

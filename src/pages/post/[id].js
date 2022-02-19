@@ -20,6 +20,7 @@ const PostPage = ({ authUserInfo, post }) => {
   const [showCommentReplyModal, setCommentReplyModalShown] = useState(false);
   const [showRegisterModal, setRegisterModalShown] = useState(false);
   const [commentId, setCommentId] = useState(null);
+  const [comments, setComments] = useState(post.post_comments || []);
   return (
     <>
       <MainHeader
@@ -35,7 +36,10 @@ const PostPage = ({ authUserInfo, post }) => {
         setRegisterModalShown={setRegisterModalShown}
       />
       <CommentFeedList
-        data={post.post_comments}
+        isAuthed={authUserInfo ? true : false}
+        postId={post.id}
+        comments={comments}
+        setComments={setComments}
         setCommentId={setCommentId}
         setCommentReplyModalShown={setCommentReplyModalShown}
         setRegisterModalShown={setRegisterModalShown}
@@ -73,7 +77,11 @@ const PostPage = ({ authUserInfo, post }) => {
 const queryPostDetailsAuthed = async (postId, token) => {
   return await graphql(
     `
-      query postDeails($post_id: Int!, $authuser_id: Int!) {
+      query postDeails(
+        $post_id: Int!
+        $authuser_id: Int!
+        $comment_limit: Int!
+      ) {
         posts(where: { id: { eq: $post_id } }) {
           id
           title
@@ -96,7 +104,7 @@ const queryPostDetailsAuthed = async (postId, token) => {
               id
             }
           }
-          post_comments(sort: { created_at: asc }) {
+          post_comments(sort: { created_at: asc }, limit: $comment_limit) {
             id
             comment
             like_count
@@ -110,28 +118,14 @@ const queryPostDetailsAuthed = async (postId, token) => {
             post_comment_likes(where: { created_by: { eq: $authuser_id } }) {
               post_comment_id
             }
-            post_comment_replies(sort: { created_at: asc }) {
-              id
-              reply
-              like_count
-              created_at
-              created_by_enduser {
-                id
-                username
-                slug
-                profile_image_url
-              }
-              post_comment_reply_likes(
-                where: { created_by: { eq: $authuser_id } }
-              ) {
-                post_comment_reply_id
-              }
+            post_comment_replies_aggregate {
+              count
             }
           }
         }
       }
     `,
-    { post_id: postId },
+    { post_id: postId, comment_limit: 5 },
     token
   );
 };
@@ -139,7 +133,7 @@ const queryPostDetailsAuthed = async (postId, token) => {
 export const queryPostDetails = async (postId) => {
   return await graphql(
     `
-      query postDeails($post_id: Int!) {
+      query postDeails($post_id: Int!, $comment_limit: Int!) {
         posts(where: { id: { eq: $post_id } }) {
           id
           title
@@ -162,7 +156,7 @@ export const queryPostDetails = async (postId) => {
               id
             }
           }
-          post_comments(sort: { created_at: asc }) {
+          post_comments(sort: { created_at: asc }, limit: $comment_limit) {
             id
             comment
             like_count
@@ -176,26 +170,14 @@ export const queryPostDetails = async (postId) => {
             post_comment_likes {
               post_comment_id
             }
-            post_comment_replies(sort: { created_at: asc }) {
-              id
-              reply
-              like_count
-              created_at
-              created_by_enduser {
-                id
-                username
-                slug
-                profile_image_url
-              }
-              post_comment_reply_likes {
-                post_comment_reply_id
-              }
+            post_comment_replies_aggregate {
+              count
             }
           }
         }
       }
     `,
-    { post_id: postId },
+    { post_id: postId, comment_limit: 5 },
     null
   );
 };
