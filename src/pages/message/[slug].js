@@ -23,7 +23,9 @@ const ChatMessages = ({ authUser, chat }) => {
       <MainHeader title={chatUser.slug} onBackClick={router.back} />
       <section className="feed">
         <MessageFeedList
+          chatId={chat.id}
           messages={messages}
+          setMessages={setMessages}
           authUser={authUser}
           chatUser={chatUser}
         />
@@ -31,7 +33,6 @@ const ChatMessages = ({ authUser, chat }) => {
       <MessageForm
         authUserId={authUser.id}
         chatId={chat.id}
-        messages={messages}
         setMessages={setMessages}
       />
     </>
@@ -73,7 +74,7 @@ const queryChatWithMessages = async (chatUserId, idToken) => {
             slug
             profile_image_url
           }
-          enduser_messages(sort: { created_at: desc }) {
+          enduser_messages(sort: { created_at: desc }, limit: 10) {
             message
             created_by
             created_at

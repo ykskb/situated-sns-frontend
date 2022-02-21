@@ -1,24 +1,87 @@
 import getConfig from "next/config";
+import { useState } from "react";
+import InfiniteScroll from "react-infinite-scroll-component";
 import { graphqlWithIdToken } from "../../lib/client";
 
-export const MessageFeedList = ({ messages, authUser, chatUser }) => {
-  messages.sort((a, b) => (a.created_at > b.created_at ? 1 : -1));
+const messageNumPerPage = 10;
+
+const queryMoreMessages = async (chatId, page) => {
+  return await graphqlWithIdToken(
+    `
+    query queryMessages($chat_id: Int!, $limit: Int!, $offset: Int!) {
+      enduser_messages (sort: {created_at: desc}, where:{chat_id: {eq: $chat_id}}, limit: $limit, offset: $offset) {
+        message
+        created_by
+        created_at
+      }}`,
+    {
+      chat_id: chatId,
+      limit: messageNumPerPage,
+      offset: messageNumPerPage * (page - 1),
+    }
+  );
+};
+
+export const MessageFeedList = ({
+  chatId,
+  messages,
+  setMessages,
+  authUser,
+  chatUser,
+}) => {
+  const [page, setPage] = useState(2);
+  const [hasMore, setHasMore] = useState(messages.length > 0);
+  // messages.sort((a, b) => (a.created_at > b.created_at ? 1 : -1));
+  const getNextPage = async () => {
+    if (hasMore && page > 1) {
+      const moreFeeds = await queryMoreMessages(chatId, page);
+      if (!moreFeeds) return;
+      if (moreFeeds.data && moreFeeds.data.enduser_messages.length < 1) {
+        setHasMore(false);
+      } else {
+        setMessages((prev) => {
+          return [...prev, ...moreFeeds.data.enduser_messages];
+        });
+        setPage((prev) => prev + 1);
+      }
+    }
+  };
   return (
     <ul className="feed-list">
-      {messages.length > 0 ? (
-        messages.map((msg) => (
-          <MessageFeed
-            key={"message-" + msg.id}
-            message={msg}
-            authUser={authUser}
-            chatUser={chatUser}
-          />
-        ))
-      ) : (
-        <li>
-          <span>There is no message sent yet.</span>
-        </li>
-      )}
+      <div
+        id="msg-container"
+        style={{
+          height: 500,
+          overflow: "auto",
+          display: "flex",
+          flexDirection: "column-reverse",
+        }}
+      >
+        <InfiniteScroll
+          dataLength={messages.length}
+          next={getNextPage}
+          style={{ display: "flex", flexDirection: "column-reverse" }}
+          inverse={true}
+          hasMore={hasMore}
+          loader={<h4>Loading...</h4>}
+          scrollableTarget="msg-container"
+        >
+          {messages.length > 0 ? (
+            messages.map((msg, i) => (
+              <MessageFeed
+                key={i}
+                message={msg}
+                authUser={authUser}
+                chatUser={chatUser}
+              />
+            ))
+          ) : (
+            <li>
+              <span>There is no message sent yet.</span>
+            </li>
+          )}
+        </InfiniteScroll>
+      </div>
     </ul>
   );
 };
@@ -56,18 +119,23 @@ const createEndUserMessage = async (chatId, msg) => {
   );
 };
 
-export const MessageForm = ({ authUserId, chatId, messages, setMessages }) => {
+export const MessageForm = ({ authUserId, chatId, setMessages }) => {
   const sendClicked = async (e) => {
     e.preventDefault();
     const msg = e.target.message.value;
-    const res = await createEndUserMessage(chatId, msg);
-    messages.push({
-      id: res.id,
-      message: msg,
-      created_by: authUserId,
-      created_at: new Date().toLocaleString(),
+    await createEndUserMessage(chatId, msg);
+    setMessages((prev) => {
+      return [
+        {
+          message: msg,
+          created_by: authUserId,
+          created_at: new Date(
+            new Date().toString().split("GMT")[0] + " UTC"
+          ).toISOString(),
+        },
+        ...prev,
+      ];
     });
-    setMessages(messages);
     e.target.message.value = "";
   };
   return (
