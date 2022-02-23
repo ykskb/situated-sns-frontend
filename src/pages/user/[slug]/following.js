@@ -4,13 +4,48 @@ import {
   withAuthUserTokenSSR,
 } from "next-firebase-auth";
 import { useRouter } from "next/router";
+import { useState } from "react";
 import MainHeader from "../../../components/mainheader";
 import { UserFeedList } from "../../../components/user/user-feed";
 import { getAuthUserInfo } from "../../../lib/api";
 import { graphql } from "../../../lib/client";
 
+const followerNumPerPage = 20;
+
+const queryEndUserFollows = async (slug, page) => {
+  return await graphql(
+    `
+      query endUserFollows($enduser_id: Int!, $limit: Int!, $offset: Int!) {
+        enduser_follows(
+          where: { created_by: { eq: $enduser_id } }
+          limit: $limit
+          offset: $offset
+          sort: { created_at: asc }
+        ) {
+          enduser_id
+          enduser {
+            slug
+            username
+            bio
+            profile_image_url
+          }
+        }
+      }
+    `,
+    {
+      slug,
+      limit: followerNumPerPage,
+      offset: followerNumPerPage * (page - 1),
+    },
+    null
+  );
+};
+
 const Following = ({ enduser }) => {
   const router = useRouter();
+  const [endUserFollows, setEndUserFollows] = useState(
+    enduser.enduser_follows_on_created_by || []
+  );
   return (
     <>
       <MainHeader
@@ -19,7 +54,10 @@ const Following = ({ enduser }) => {
       />
       <section className="feed">
         <UserFeedList
-          enduserFollows={enduser.enduser_follows_on_created_by || []}
+          enduserSlug={enduser.slug}
+          enduserFollows={endUserFollows}
+          setEndUserFollows={setEndUserFollows}
+          getMoreUserFollows={queryEndUserFollows}
         />
       </section>
     </>
@@ -37,7 +75,7 @@ const queryEndUserWithFollowing = async (slug) => {
           enduser_follows_on_created_by_aggregate {
             count
           }
-          enduser_follows_on_created_by {
+          enduser_follows_on_created_by(sort: { created_at: asc }, limit: 20) {
             enduser_id
             enduser {
               slug

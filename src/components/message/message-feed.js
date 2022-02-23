@@ -30,20 +30,19 @@ export const MessageFeedList = ({
   chatUser,
 }) => {
   const [page, setPage] = useState(2);
-  const [hasMore, setHasMore] = useState(messages.length > 0);
+  const [hasMore, setHasMore] = useState(messages.length === messageNumPerPage);
   // messages.sort((a, b) => (a.created_at > b.created_at ? 1 : -1));
   const getNextPage = async () => {
     if (hasMore && page > 1) {
       const moreFeeds = await queryMoreMessages(chatId, page);
-      if (!moreFeeds) return;
-      if (moreFeeds.data && moreFeeds.data.enduser_messages.length < 1) {
+      if (!moreFeeds || !moreFeeds.data || !moreFeeds.data.enduser_messages)
+        return;
+      setMessages((prev) => {
+        return [...prev, ...moreFeeds.data.enduser_messages];
+      });
+      setPage((prev) => prev + 1);
+      if (moreFeeds.data.enduser_messages.length < messageNumPerPage)
         setHasMore(false);
-      } else {
-        setMessages((prev) => {
-          return [...prev, ...moreFeeds.data.enduser_messages];
-        });
-        setPage((prev) => prev + 1);
-      }
     }
   };
   return (

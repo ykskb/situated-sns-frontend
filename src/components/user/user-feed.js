@@ -1,15 +1,49 @@
 import Link from "next/link";
 import getConfig from "next/config";
+import InfiniteScroll from "react-infinite-scroll-component";
+import { useState } from "react";
 
-export const UserFeedList = ({ enduserFollows, enduserKey = "enduser" }) => {
+const userFeedNumPerPage = 15;
+
+export const UserFeedList = ({
+  enduserSlug,
+  enduserFollows,
+  setEndUserFollows,
+  getMoreUserFollows,
+  enduserKey = "enduser",
+}) => {
+  const [page, setPage] = useState(2);
+  const [hasMore, setHasMore] = useState(
+    enduserFollows.length === userFeedNumPerPage
+  );
+
+  const getNextPage = async () => {
+    if (hasMore && page > 1) {
+      const moreFeeds = await getMoreUserFollows(enduserSlug, page);
+      if (!moreFeeds || !moreFeeds.data || !moreFeeds.data.enduser_follows)
+        return;
+      setEndUserFollows((prev) => {
+        return [...prev, ...moreFeeds.data.enduser_follows];
+      });
+      setPage((prev) => prev + 1);
+      if (moreFeeds.data.enduser_follows.length < userFeedNumPerPage)
+        setHasMore(false);
+    }
+  };
+
   return (
     <ul className="feed-list">
-      {enduserFollows.map((enduserFollow) => (
-        <UserFeed
-          key={"user-" + enduserFollow[enduserKey].slug}
-          enduser={enduserFollow[enduserKey]}
-        />
-      ))}
+      <InfiniteScroll
+        dataLength={enduserFollows.length}
+        next={getNextPage}
+        hasMore={hasMore}
+        loader={<h4>Loading...</h4>}
+        endMessage={<h4>No more user</h4>}
+      >
+        {enduserFollows.map((enduserFollow, i) => (
+          <UserFeed key={i} enduser={enduserFollow[enduserKey]} />
+        ))}
+      </InfiniteScroll>
     </ul>
   );
 };

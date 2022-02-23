@@ -104,20 +104,21 @@ export const CommentFeedList = ({
   setRegisterModalShown,
 }) => {
   const [page, setPage] = useState(2);
-  const [hasMore, setHasMore] = useState(comments.length > 0);
+  const [hasMore, setHasMore] = useState(
+    comments.length === postCommentNumPerPage
+  );
 
   const getNextPage = async () => {
     if (hasMore && page > 1) {
       const moreFeeds = await getMorePostComments(isAuthed, postId, page);
-      if (!moreFeeds) return;
-      if (moreFeeds.data && moreFeeds.data.post_comments.length < 1) {
+      if (!moreFeeds || !moreFeeds.data || !moreFeeds.data.post_comments)
+        return;
+      setComments((prev) => {
+        return [...prev, ...moreFeeds.data.post_comments];
+      });
+      setPage((prev) => prev + 1);
+      if (moreFeeds.data.post_comments.length < postCommentNumPerPage)
         setHasMore(false);
-      } else {
-        setComments((prev) => {
-          return [...prev, ...moreFeeds.data.post_comments];
-        });
-        setPage((prev) => prev + 1);
-      }
     }
   };
 

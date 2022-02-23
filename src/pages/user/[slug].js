@@ -80,18 +80,10 @@ const UserPage = ({ enduser, authUser }) => {
   const [showCommentModal, setCommentModalShown] = useState(false);
   const [showRegisterModal, setRegisterModalShown] = useState(false);
   const [postId, setPostId] = useState(null);
-  const [followingCount, _setFollowingCount] = useState(
-    enduser.enduser_follows_on_created_by_aggregate.count || 0
-  );
-  const [followedCount, setFollowedCount] = useState(
-    enduser.enduser_follows_on_enduser_id_aggregate.count || 0
-  );
-  const [isFollowing, setIsFollowing] = useState(
-    authUser ? enduser.enduser_follows_on_enduser_id.length > 0 : false
-  );
-  const [isFollowed, _setIsFollowed] = useState(
-    authUser ? enduser.enduser_follows_on_created_by.length > 0 : false
-  );
+  const [followingCount, setFollowingCount] = useState(0);
+  const [followedCount, setFollowedCount] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowed, setIsFollowed] = useState(false);
   const isValidUser = authUser && authUser.is_valid;
   const isOwnPage = authUser && enduser.slug == authUser.slug;
   const followButtonClicked = async (e) => {
@@ -120,6 +112,18 @@ const UserPage = ({ enduser, authUser }) => {
 
   useEffect(() => {
     setPostFeeds(enduser.posts);
+    setFollowingCount(
+      enduser.enduser_follows_on_created_by_aggregate.count || 0
+    );
+    setFollowedCount(
+      enduser.enduser_follows_on_enduser_id_aggregate.count || 0
+    );
+    setIsFollowing(
+      authUser ? enduser.enduser_follows_on_enduser_id.length > 0 : false
+    );
+    setIsFollowed(
+      authUser ? enduser.enduser_follows_on_created_by.length > 0 : false
+    );
   }, [enduser]);
 
   return (

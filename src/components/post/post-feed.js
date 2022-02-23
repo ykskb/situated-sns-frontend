@@ -11,6 +11,8 @@ import { authUserInfoContext } from "../../lib/context";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { graphqlWithIdToken } from "../../lib/client";
 
+const postNumPerPage = 5;
+
 export const PostFeedList = ({
   postFeeds,
   getMoreFeeds,
@@ -21,16 +23,17 @@ export const PostFeedList = ({
   authUserInfo,
 }) => {
   const [page, setPage] = useState(2);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore] = useState(postFeeds.length === postNumPerPage);
 
   const getNextPage = async () => {
     if (hasMore && page > 1) {
       const moreFeeds = await getMoreFeeds(page);
-      if (moreFeeds.data && moreFeeds.data.posts.length < 1) setHasMore(false);
+      if (!moreFeeds || !moreFeeds.data || !moreFeeds.data.posts) return;
       setPostFeeds((prev) => {
         return [...prev, ...moreFeeds.data.posts];
       });
       setPage((prev) => prev + 1);
+      if (moreFeeds.data.posts.length < postNumPerPage) setHasMore(false);
     }
   };
 
@@ -41,7 +44,7 @@ export const PostFeedList = ({
         next={getNextPage}
         hasMore={hasMore}
         loader={<h4>Loading...</h4>}
-        endMessage={<h4>End of posts</h4>}
+        endMessage={<h4>No more post</h4>}
       >
         {postFeeds.map((post) => (
           <PostFeed
