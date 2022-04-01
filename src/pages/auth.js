@@ -1,14 +1,8 @@
 import { useState, useEffect } from "react";
 import firebase from "firebase";
-import {
-  withAuthUser,
-  AuthAction,
-  withAuthUserTokenSSR,
-} from "next-firebase-auth";
 import StyledFirebaseAuth from "react-firebaseui/StyledFirebaseAuth";
 import MainHeader from "../components/mainheader";
 import { useRouter } from "next/router";
-import { getAuthUserInfo } from "../lib/api";
 
 const firebaseAuthConfig = {
   signInFlow: "popup",
@@ -18,7 +12,7 @@ const firebaseAuthConfig = {
       requireDisplayName: false,
     },
   ],
-  signInSuccessUrl: "/auth",
+  signInSuccessUrl: "/",
   credentialHelper: "none",
   callbacks: {
     signInSuccessWithAuthResult: () => false,
@@ -54,19 +48,4 @@ function SignupPage() {
   );
 }
 
-export const getServerSideProps = withAuthUserTokenSSR({
-  whenAuthed: AuthAction.RENDER,
-})(async ({ AuthUser, req }) => {
-  const token = await AuthUser.getIdToken();
-  const userInfo = token ? await getAuthUserInfo(token) : null;
-  if (userInfo && !userInfo.is_valid) {
-    return {
-      redirect: {
-        destination: "/profile",
-        permanent: false,
-      },
-    };
-  }
-});
-
-export default withAuthUser()(SignupPage);
+export default SignupPage;

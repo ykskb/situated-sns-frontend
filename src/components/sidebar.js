@@ -33,7 +33,9 @@ const Sidebar = ({ signOut }) => {
                 </li>
               </a>
             </Link>
-            <Link href={isValidUser ? "/user/" + authUserInfo.slug : "/auth"}>
+            <Link
+              href={isValidUser ? "/user/" + authUserInfo.slug : "/profile"}
+            >
               <a>
                 <li className="main-nav-item">
                   <a className="menu-item">

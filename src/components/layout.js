@@ -4,7 +4,7 @@ import Sidebar from "./sidebar";
 import Mainside from "./mainside";
 import { Context } from "../lib/context";
 import { useAuthUser } from "next-firebase-auth";
-import { login } from "../lib/api";
+import { login, register } from "../lib/api";
 import firebase from "firebase";
 import { useRouter } from "next/router";
 
@@ -26,16 +26,21 @@ const Layout = ({ children }) => {
               setContext({ authUserInfo: loginRes.authUser });
               // Valid user login
               if (loginRes.authUser && loginRes.authUser.is_valid) {
-                // User might land on any page with token, so only redirect from auth page
-                if (router.pathname === "/auth") {
-                  router.push("/");
-                }
+                router.push("/");
               } else {
-                // Firebase success, but registration is not done
+                // Registered, but registration is not done
                 router.push("/profile");
               }
-            } catch {
-              console.log("Received not authenticated from backend");
+            } catch (e) {
+              console.log(e);
+              try {
+                const registerRes = await register(token);
+                setContext({ authUserInfo: registerRes.authUser });
+                router.push("/profile");
+              } catch (e) {
+                console.log(e);
+                console.log("Received not authenticated from backend");
+              }
             }
             setAuthInProgress(false);
           });

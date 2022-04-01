@@ -37,6 +37,9 @@ const Profile = ({ authUserInfo }) => {
     // If is_valid becomes valid, update context
     const authUserInfo = context && context.authUserInfo;
     if (authUserInfo && !authUserInfo.is_valid) {
+      authUserInfo.slug = slug;
+      authUserInfo.username = username;
+      authUserInfo.bio = bio;
       authUserInfo.is_valid = true;
       setContext({ authUserInfo: authUserInfo });
     }

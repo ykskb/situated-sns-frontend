@@ -13,13 +13,13 @@ export const request = async (method, url, body, headers, authToken) => {
     opts.headers["Authorization"] = authToken;
   }
   const res = await fetch(url, opts);
+  const resBody = await res.text();
   if (!res.ok) {
     throw new Error(
-      `Data fetching failed with status ${res.status}: 
-      ${JSON.stringify(res.json())}`
+      `Data fetching failed with status ${res.status}: ${resBody}`
     );
   }
-  return await res.json();
+  return await JSON.parse(resBody);
 };
 
 export const requestWithIdToken = async (url, method, body, headers) => {

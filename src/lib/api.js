@@ -5,6 +5,10 @@ export const login = async (authToken) => {
   return await request("POST", "/api/login", {}, {}, authToken);
 };
 
+export const register = async (authToken) => {
+  return await request("POST", "/api/register", {}, {}, authToken);
+};
+
 export const getAuthUserInfo = async (authToken) => {
   const { publicRuntimeConfig } = getConfig();
   try {
@@ -15,7 +19,8 @@ export const getAuthUserInfo = async (authToken) => {
       {},
       authToken
     );
-  } catch (e) {
+  } catch (error) {
+    console.log(error);
     return null;
   }
 };
