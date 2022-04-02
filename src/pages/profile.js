@@ -1,4 +1,8 @@
-import { withAuthUser, withAuthUserTokenSSR } from "next-firebase-auth";
+import {
+  withAuthUser,
+  withAuthUserTokenSSR,
+  AuthAction,
+} from "next-firebase-auth";
 import Router, { useRouter } from "next/router";
 import { getAuthUserInfo, postProfileImage } from "../lib/api";
 import MainHeader from "../components/mainheader";
@@ -113,8 +117,11 @@ export const getServerSideProps = withAuthUserTokenSSR()(
       };
     }
     const authUserInfo = await getAuthUserInfo(token);
+
     return { props: { authUserInfo } };
   }
 );
 
-export default withAuthUser()(Profile);
+export default withAuthUser({
+  whenUnauthedAfterInit: AuthAction.REDIRECT_TO_LOGIN,
+})(Profile);

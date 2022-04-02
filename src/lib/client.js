@@ -51,5 +51,9 @@ export const graphqlWithIdToken = async (query, variables) => {
     return user.getIdToken().then(async function (idToken) {
       return await graphql(query, variables, idToken);
     });
+  } else {
+    throw new Error(
+      "Attempted to call GraphQL with ID token but not authenticated."
+    );
   }
 };

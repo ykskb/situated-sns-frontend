@@ -2,6 +2,7 @@ import Link from "next/link";
 import { useContext } from "react";
 import { Context } from "../lib/context";
 import firebase from "firebase";
+import getConfig from "next/config";
 
 const Sidebar = ({ signOut }) => {
   const [context, _setContext] = useContext(Context);
@@ -10,6 +11,7 @@ const Sidebar = ({ signOut }) => {
   const logoutClicked = (_e) => {
     firebase.auth().signOut();
   };
+  const { publicRuntimeConfig } = getConfig();
   return (
     <div className="main-nav">
       <ul className="main-nav-list">
@@ -63,18 +65,22 @@ const Sidebar = ({ signOut }) => {
           </li>
         )}
         <li className="main-nav-item">
-          <a className="menu-item">
-            <span className="icon">🔖</span>
-            <span className="text">Bookmarks</span>
-          </a>
-        </li>
-        <li className="main-nav-item">
           <Link href="/post/create">
             <a className="menu-item">
               <span className="icon">✏️</span>
               <span className="text">Create a Post</span>
             </a>
           </Link>
+        </li>
+        <li className="main-nav-item">
+          <a
+            className="menu-item"
+            href={publicRuntimeConfig.BACKEND_URL + "/graphiql"}
+            target="_blank"
+          >
+            <span className="icon">📖</span>
+            <span className="text">GraphiQL</span>
+          </a>
         </li>
       </ul>
     </div>

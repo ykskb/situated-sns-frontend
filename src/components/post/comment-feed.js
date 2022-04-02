@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FeedHeader, CommentButton, LikeButton, ShareButton } from "./feed";
 import { authUserInfoContext } from "../../lib/context";
-import { graphqlWithIdToken } from "../../lib/client";
+import { graphql, graphqlWithIdToken } from "../../lib/client";
 import InfiniteScroll from "react-infinite-scroll-component";
 
 const postCommentNumPerPage = 5;
@@ -218,6 +218,7 @@ const CommentFeed = ({
             commentId={comment.id}
             setCommentId={setCommentId}
             setCommentReplyModalShown={setCommentReplyModalShown}
+            setRegisterModalShown={setRegisterModalShown}
           />
         )}
     </>
@@ -242,7 +243,7 @@ const queryCommentReplies = async (comment_id) => {
       post_comment_reply_id
     }
   }}`;
-  return await graphqlWithIdToken(q, { comment_id });
+  return await graphql(q, { comment_id });
 };
 
 const queryCommentRepliesAuthed = async (comment_id) => {
@@ -290,6 +291,7 @@ const CommentReplyFeedList = ({
             commentId={commentId}
             setCommentId={setCommentId}
             setCommentReplyModalShown={setCommentReplyModalShown}
+            setRegisterModalShown={setRegisterModalShown}
           />
         ))
       ) : (

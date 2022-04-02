@@ -41,7 +41,6 @@ const FeedCommentModal = ({ show, postId, onClose, afterSubmit }) => {
         </div>
         <div className="modal-body">
           <form className="create-form" onSubmit={submitComment}>
-            <label htmlFor="comment">Comment</label>
             <input
               id="comment"
               name="comment"
@@ -50,7 +49,7 @@ const FeedCommentModal = ({ show, postId, onClose, afterSubmit }) => {
               required
             />
             <button className="big-green-button" type="submit">
-              Reply {postId}
+              Comment
             </button>
           </form>
         </div>

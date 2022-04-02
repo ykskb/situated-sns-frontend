@@ -22,16 +22,20 @@ const Layout = ({ children }) => {
           setAuthInProgress(true);
           user.getIdToken().then(async (token) => {
             try {
+              // Attempt login.
               const loginRes = await login(token);
               setContext({ authUserInfo: loginRes.authUser });
               // Valid user login
               if (loginRes.authUser && loginRes.authUser.is_valid) {
-                router.push("/");
+                if (router.pathname === "/auth") {
+                  router.push("/");
+                }
               } else {
                 // Registered, but registration is not done
                 router.push("/profile");
               }
             } catch (e) {
+              // Login failed. Let's register.
               console.log(e);
               try {
                 const registerRes = await register(token);

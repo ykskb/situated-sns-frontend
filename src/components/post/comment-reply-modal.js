@@ -41,10 +41,9 @@ const CommentReplyModal = ({ show, commentId, onClose, afterSubmit }) => {
         </div>
         <div className="modal-body">
           <form className="create-form" onSubmit={submitComment}>
-            <label htmlFor="reply">Reply</label>
             <input id="reply" name="reply" type="textarea" rows="10" required />
             <button className="big-green-button" type="submit">
-              Reply {commentId}
+              Reply
             </button>
           </form>
         </div>
