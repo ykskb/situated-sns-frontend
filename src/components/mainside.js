@@ -1,10 +1,23 @@
+import { useRouter } from "next/router";
+
 const Mainside = () => {
+  const router = useRouter();
+  const handleSearchKeyPress = async (e) => {
+    if (e.key === "Enter") {
+      router.push(`/search?key=${e.target.value}`);
+    }
+  };
   return (
     <aside className="main-side">
       <div className="main-side-searchbox">
         <label className="search-box">
           <span className="icon">🔎</span>
-          <input type="search" placeholder="Search" />
+          <input
+            type="search"
+            name="search"
+            placeholder="Search"
+            onKeyPress={handleSearchKeyPress}
+          />
         </label>
       </div>
       <section className="common-box">

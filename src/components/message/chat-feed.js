@@ -5,12 +5,8 @@ export const ChatFeedList = ({ authUserId, chats }) => {
   return (
     <ul className="feed-list">
       {chats.length > 0 ? (
-        chats.map((chat) => (
-          <ChatFeed
-            key={"chat-" + chat.id}
-            authUserId={authUserId}
-            chat={chat}
-          />
+        chats.map((chat, i) => (
+          <ChatFeed key={i} authUserId={authUserId} chat={chat} />
         ))
       ) : (
         <li>

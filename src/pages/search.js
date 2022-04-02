@@ -15,14 +15,29 @@ import { graphql, graphqlWithIdToken } from "../lib/client";
 
 const postNumPerPage = 5;
 
-const queryPostList = async (authed, token = null, page = 1) => {
+const queryPostList = async (
+  authed,
+  token = null,
+  page = 1,
+  searchQuery = "",
+  tagQuery = ""
+) => {
   const vars = {
     limit: postNumPerPage,
     offset: postNumPerPage * (page - 1),
   };
-  const queryArgs = "$authuser_id: Int!, $limit: Int!, $offset: Int!";
-  const queryFilter =
-    "sort: { created_at: desc }, limit: $limit, offset: $offset";
+  let queryArgs, queryFilter;
+  if (tagQuery) {
+    vars["tag"] = tagQuery;
+    queryArgs = "$authuser_id: Int!, $limit: Int!, $offset: Int!";
+    queryFilter = "sort: { created_at: desc }, limit: $limit, offset: $offset";
+  } else {
+    vars["search"] = searchQuery;
+    queryArgs =
+      "$authuser_id: Int!, $limit: Int!, $offset: Int!, $search: String!";
+    queryFilter =
+      "where: { content: { like: $search }}, sort: { created_at: desc }, limit: $limit, offset: $offset";
+  }
   const q = `
       query postList(${queryArgs}) {
         posts(${queryFilter}) ${authed ? authedPostListObj : postListObj} 
@@ -35,7 +50,7 @@ const queryPostList = async (authed, token = null, page = 1) => {
   }
 };
 
-const HomePage = ({ authUserInfo, feeds }) => {
+const SearchPage = ({ authUserInfo, feeds, searchQuery, tagQuery }) => {
   const [postFeeds, setPostFeeds] = useState(feeds);
   const [showCommentModal, setCommentModalShown] = useState(false);
   const [showRegisterModal, setRegisterModalShown] = useState(false);
@@ -48,7 +63,9 @@ const HomePage = ({ authUserInfo, feeds }) => {
   };
   return (
     <>
-      <MainHeader title="Home" />
+      <MainHeader
+        title={tagQuery ? `Tag: ${tagQuery}` : `Search: ${searchQuery}`}
+      />
       <section className="feed">
         <PostFeedList
           postFeeds={postFeeds}
@@ -81,17 +98,32 @@ const HomePage = ({ authUserInfo, feeds }) => {
 
 export const getServerSideProps = withAuthUserTokenSSR({
   whenUnauthed: AuthAction.RENDER,
-})(async ({ AuthUser, req }) => {
+})(async ({ AuthUser, req, query }) => {
   let authUserInfo;
   const token = await AuthUser.getIdToken();
   authUserInfo = token ? await getAuthUserInfo(token) : null;
-  const res = await queryPostList(authUserInfo, token, 1);
+
+  const getFirstQuery = (q) => {
+    return !q ? null : typeof q === "string" ? q : q[0];
+  };
+  const { key, tag } = query;
+  const searchQuery = getFirstQuery(key);
+  const tagQuery = getFirstQuery(tag);
+  const res = await queryPostList(
+    authUserInfo,
+    token,
+    1,
+    searchQuery,
+    tagQuery
+  );
   return {
     props: {
-      feeds: res ? res.data["posts"] : [],
       authUserInfo: authUserInfo || null,
+      feeds: res ? res.data["posts"] : [],
+      searchQuery,
+      tagQuery,
     },
   };
 });
 
-export default withAuthUser()(HomePage);
+export default withAuthUser()(SearchPage);
