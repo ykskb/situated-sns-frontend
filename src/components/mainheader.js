@@ -1,4 +1,4 @@
-const MainHeader = ({ title, onBackClick }) => {
+const MainHeader = ({ title, onBackClick, childElements }) => {
   return (
     <header className="main-header">
       {typeof onBackClick === "function" ? (
@@ -13,6 +13,7 @@ const MainHeader = ({ title, onBackClick }) => {
       ) : null}
       <div className="main-header-content">
         <h1 className="section-title js-title">{title}</h1>
+        {childElements ? childElements : null}
       </div>
     </header>
   );

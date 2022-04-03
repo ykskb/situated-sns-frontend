@@ -1,43 +1,29 @@
 import { useState } from "react";
+import Link from "next/dist/client/link";
 import {
   withAuthUser,
   withAuthUserTokenSSR,
   AuthAction,
 } from "next-firebase-auth";
-import { PostFeedList } from "../components/post/post-feed";
-import MainHeader from "../components/mainheader";
-import FeedCommentModal from "../components/post/comment-modal";
+import { PostFeedList } from "../../components/post/post-feed";
+import MainHeader from "../../components/mainheader";
+import FeedCommentModal from "../../components/post/comment-modal";
 import { useRouter } from "next/router";
-import { getAuthUserInfo } from "../lib/api";
-import { postListObj, authedPostListObj } from "../lib/graphql";
-import RegisterModal from "../components/register-modal";
-import { graphql, graphqlWithIdToken } from "../lib/client";
+import { getAuthUserInfo } from "../../lib/api";
+import { postListObj, authedPostListObj } from "../../lib/graphql";
+import RegisterModal from "../../components/register-modal";
+import { graphql, graphqlWithIdToken } from "../../lib/client";
 
 const postNumPerPage = 5;
 
-const queryPostList = async (
-  authed,
-  token = null,
-  page = 1,
-  searchQuery = "",
-  tagQuery = ""
-) => {
+const queryPostList = async (authed, token = null, page = 1) => {
   const vars = {
     limit: postNumPerPage,
     offset: postNumPerPage * (page - 1),
   };
-  let queryArgs, queryFilter;
-  if (tagQuery) {
-    vars["tag"] = tagQuery;
-    queryArgs = "$authuser_id: Int!, $limit: Int!, $offset: Int!";
-    queryFilter = "sort: { created_at: desc }, limit: $limit, offset: $offset";
-  } else {
-    vars["search"] = searchQuery;
-    queryArgs =
-      "$authuser_id: Int!, $limit: Int!, $offset: Int!, $search: String!";
-    queryFilter =
-      "where: { content: { like: $search }}, sort: { created_at: desc }, limit: $limit, offset: $offset";
-  }
+  const queryArgs = "$authuser_id: Int!, $limit: Int!, $offset: Int!";
+  const queryFilter =
+    "sort: { created_at: desc }, limit: $limit, offset: $offset";
   const q = `
       query postList(${queryArgs}) {
         posts(${queryFilter}) ${authed ? authedPostListObj : postListObj} 
@@ -50,22 +36,23 @@ const queryPostList = async (
   }
 };
 
-const SearchPage = ({ authUserInfo, feeds, searchQuery, tagQuery }) => {
+const PostsPage = ({ authUserInfo, feeds }) => {
   const [postFeeds, setPostFeeds] = useState(feeds);
   const [showCommentModal, setCommentModalShown] = useState(false);
   const [showRegisterModal, setRegisterModalShown] = useState(false);
   const [postId, setPostId] = useState(null);
   const router = useRouter();
   const getMoreFeeds = async (page) => {
-    return authUserInfo
-      ? await queryPostListAuthed(null, page)
-      : await queryPostList(page);
+    return await queryPostList(authUserInfo, null, page);
   };
+  const headerChildElems = (
+    <Link href="/">
+      <a>→ Posts by Following Users</a>
+    </Link>
+  );
   return (
     <>
-      <MainHeader
-        title={tagQuery ? `Tag: ${tagQuery}` : `Search: ${searchQuery}`}
-      />
+      <MainHeader title="Posts by All Users" childElements={headerChildElems} />
       <section className="feed">
         <PostFeedList
           postFeeds={postFeeds}
@@ -98,32 +85,17 @@ const SearchPage = ({ authUserInfo, feeds, searchQuery, tagQuery }) => {
 
 export const getServerSideProps = withAuthUserTokenSSR({
   whenUnauthed: AuthAction.RENDER,
-})(async ({ AuthUser, req, query }) => {
+})(async ({ AuthUser, req }) => {
   let authUserInfo;
   const token = await AuthUser.getIdToken();
   authUserInfo = token ? await getAuthUserInfo(token) : null;
-
-  const getFirstQuery = (q) => {
-    return !q ? "" : typeof q === "string" ? q : q[0];
-  };
-  const { key, tag } = query;
-  const searchQuery = getFirstQuery(key);
-  const tagQuery = getFirstQuery(tag);
-  const res = await queryPostList(
-    authUserInfo,
-    token,
-    1,
-    searchQuery,
-    tagQuery
-  );
+  const res = await queryPostList(authUserInfo, token, 1);
   return {
     props: {
-      authUserInfo: authUserInfo || null,
       feeds: res ? res.data["posts"] : [],
-      searchQuery,
-      tagQuery,
+      authUserInfo: authUserInfo || null,
     },
   };
 });
 
-export default withAuthUser()(SearchPage);
+export default withAuthUser()(PostsPage);
