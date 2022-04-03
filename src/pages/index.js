@@ -110,7 +110,7 @@ export const getServerSideProps = withAuthUserTokenSSR({
 })(async ({ AuthUser, req }) => {
   const redirectRes = {
     redirect: {
-      destination: "/post",
+      destination: "/post?type=new-user",
       permanent: false,
     },
   };

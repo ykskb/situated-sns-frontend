@@ -36,7 +36,7 @@ const queryPostList = async (authed, token = null, page = 1) => {
   }
 };
 
-const PostsPage = ({ authUserInfo, feeds }) => {
+const PostsPage = ({ authUserInfo, feeds, query }) => {
   const [postFeeds, setPostFeeds] = useState(feeds);
   const [showCommentModal, setCommentModalShown] = useState(false);
   const [showRegisterModal, setRegisterModalShown] = useState(false);
@@ -45,11 +45,12 @@ const PostsPage = ({ authUserInfo, feeds }) => {
   const getMoreFeeds = async (page) => {
     return await queryPostList(authUserInfo, null, page);
   };
-  const headerChildElems = (
-    <Link href="/">
-      <a>→ Posts by Following Users</a>
-    </Link>
-  );
+  const headerChildElems =
+    query["type"] === "new-user" ? null : (
+      <Link href="/">
+        <a>→ Posts by Following Users</a>
+      </Link>
+    );
   return (
     <>
       <MainHeader title="Posts by All Users" childElements={headerChildElems} />
@@ -85,7 +86,7 @@ const PostsPage = ({ authUserInfo, feeds }) => {
 
 export const getServerSideProps = withAuthUserTokenSSR({
   whenUnauthed: AuthAction.RENDER,
-})(async ({ AuthUser, req }) => {
+})(async ({ AuthUser, req, query }) => {
   let authUserInfo;
   const token = await AuthUser.getIdToken();
   authUserInfo = token ? await getAuthUserInfo(token) : null;
@@ -94,6 +95,7 @@ export const getServerSideProps = withAuthUserTokenSSR({
     props: {
       feeds: res ? res.data["posts"] : [],
       authUserInfo: authUserInfo || null,
+      query,
     },
   };
 });
