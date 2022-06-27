@@ -1,8 +1,8 @@
 # Situated Problem for [Phrag](https://github.com/ykskb/phrag) : SNS Project (Frontend)
 
-This project is frontend (Next JS) of a situated problem for project: [Phrag](https://github.com/ykskb/phrag) to inspect & validate its concept of constraint-driven transformation of RDBMS schema to GraphQL.
+This project is frontend (Next JS) of a situated problem for project: [Phrag](https://github.com/ykskb/phrag) to inspect its concept & validate the practicality.
 
-Backend currently sits under dev profile of Phrag project at this mement. ([Link](https://github.com/ykskb/phrag/blob/main/dev/src/dev_reitit.clj))
+Backend sits [here](https://github.com/ykskb/situated-sns-backend).
 
 ### Supported Features
 

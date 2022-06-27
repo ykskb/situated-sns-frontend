@@ -58,9 +58,13 @@ const queryChatWithMessages = async (chatUserId, idToken) => {
       query queryEnduserChats($enduser_id: Int!) {
         enduser_chats(
           where: {
-            or: [
-              { enduser_id: { eq: $enduser_id } }
-              { created_by: { eq: $enduser_id } }
+            and: [
+              {
+                or: [
+                  { enduser_id: { eq: $enduser_id } }
+                  { created_by: { eq: $enduser_id } }
+                ]
+              }
             ]
           }
         ) {
